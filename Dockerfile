@@ -1,8 +1,12 @@
 FROM ubuntu:22.04 as base
 RUN apt-get update
 RUN mkdir /home/csst && useradd -d /home/csst -s /usr/bin/bash csst
-RUN apt-get install -y vim strace python3-dev wget libfftw3-dev build-essential libssl-dev
+RUN apt-get install -y vim strace python3-dev wget libfftw3-dev build-essential libssl-dev git
 RUN wget https://bootstrap.pypa.io/get-pip.py && python3 get-pip.py && rm -f get-pip.py
+
+RUN pip install numpy -i https://pypi.tuna.tsinghua.edu.cn/simple
+RUN pip install pybind11 -i https://pypi.tuna.tsinghua.edu.cn/simple
+RUN pip install astropy -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 # install cmake
 COPY cmake-3.30.0-rc4.tar.gz /home/csst/ 
