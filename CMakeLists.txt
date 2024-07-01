@@ -2,14 +2,56 @@ cmake_minimum_required(VERSION 3.18)
 project("GalSim")
 set(CMAKE_C_COMPILER /usr/bin/gcc)
 
-# NOTE: Add your configurations here
-set(EIGEN_HOME_DIR  "downloaded_eigen/eigen-3.4.0" CACHE PATH "path to eigen")
-set(PYTHON_INCL_DIR "/home/jiangbo/anaconda3/envs/autogen/include/python3.10" CACHE PATH "path to python header files")
-set(PYBIND_INCL_DIR "/home/jiangbo/anaconda3/envs/autogen/lib/python3.10/site-packages/pybind11/include" CACHE PATH "path to pybind header files")
-set(NUMPY_INCL_DIR  "/home/jiangbo/anaconda3/envs/autogen/lib/python3.10/site-packages/numpy/_core/include" CACHE PATH "path to numpy header files")
-set(FFTW3_LIB_DIR   "/lib/x86_64-linux-gnu/" CACHE PATH "path to libfftw3")
+# NOTE: modify your configurations here
+set(EIGEN_HOME_DIR  "downloaded_eigen/eigen-3.4.0" CACHE PATH "directory to eigen" )
+set(PYTHON_INCL_DIR "" CACHE PATH "directory to python header files")
+set(PYBIND_INCL_DIR "" CACHE PATH "directory to pybind header files")
+set(NUMPY_INCL_DIR  "" CACHE PATH "directory to numpy header files")
+set(FFTW3_LIB_DIR   "" CACHE PATH "directory to libfftw3.so")
 
-include_directories("include" "include/galsim" "${EIGEN_HOME_DIR}" "${PYTHON_INCL_DIR}" "${PYBIND_INCL_DIR}" "${NUMPY_INCL_DIR}")
+if (EIGEN_HOME_DIR)
+    execute_process(COMMAND python -c "import os; exists = \"existed\" if(os.path.exists(\"${EIGEN_HOME_DIR}\")) else \"\"; print(exists)" OUTPUT_VARIABLE EIGEN_EXIST OUTPUT_STRIP_TRAILING_WHITESPACE)
+    if (EIGEN_EXIST)
+        message("EIGEN_HOME_DIR is set to ${EIGEN_HOME_DIR}")
+    else()
+        message(FATAL_ERROR "the eigen path ${EIGEN_HOME_DIR} does not exist")
+    endif()    
+else()
+    message(FATAL_ERROR "please set the variable EIGEN_HOME_DIR")
+endif()   
+
+if (PYTHON_INCL_DIR)
+    message("PYTHON_INCL_DIR is set to ${PYTHON_INCL_DIR}")
+else()
+    execute_process(COMMAND python -c "import sys, os, re; possible_paths = [re.sub(r'/lib/', r'/include/', path) for path in sys.path]; print([path for path in possible_paths if os.path.exists(path)][0])" OUTPUT_VARIABLE PYTHON_INCL_DIR OUTPUT_STRIP_TRAILING_WHITESPACE) 
+    message("PYTHON_INCL_DIR is set to ${PYTHON_INCL_DIR}")
+endif()
+
+if (PYBIND_INCL_DIR)
+    message("PYBIND_INCL_DIR is set to ${PYBIND_INCL_DIR}")
+else()
+    execute_process(COMMAND python -c "import pybind11; import os; print(os.path.join(os.path.dirname(pybind11.__file__), 'include'))" OUTPUT_VARIABLE PYBIND_INCL_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
+    message("PYBIND_INCL_DIR is set to ${PYBIND_INCL_DIR}")
+endif()    
+
+if (NUMPY_INCL_DIR)
+    message("NUMPY_INCL_DIR is set to ${NUMPY_INCL_DIR}")
+else()
+    execute_process(COMMAND python -c "import numpy as np; import os; print(os.path.join(os.path.dirname(np.__file__), 'core', 'include'))" OUTPUT_VARIABLE NUMPY_INCL_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
+    message("NUMPY_INCL_DIR is set to ${NUMPY_INCL_DIR}")
+endif()    
+
+if (FFTW3_LIB_DIR)
+    message("FFTW3_LIB_DIR is set to ${FFTW3_LIB_DIR}")
+else()
+    execute_process(COMMAND bash -c "dirname $(find / -name libfftw3.so 2>/dev/null)" OUTPUT_VARIABLE FFTW3_LIB_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
+    message("FFTW3_LIB_DIR is set to ${FFTW3_LIB_DIR}")
+endif()
+
+execute_process(COMMAND python -c "import os; print(os.path.abspath('include'))" OUTPUT_VARIABLE LOCAL_INCL_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process(COMMAND python -c "import os; print(os.path.abspath('include/galsim'))" OUTPUT_VARIABLE LOCAL_GALSIM_INCL_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+include_directories("${LOCAL_INCL_DIR}" "${LOCAL_GALSIM_INCL_DIR}" "${EIGEN_HOME_DIR}" "${PYTHON_INCL_DIR}" "${PYBIND_INCL_DIR}" "${NUMPY_INCL_DIR}")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -pthread -Wsign-compare -DNDEBUG -fPIC -fwrapv -O2 -Wall -std=c++11 -fvisibility=hidden -fopenmp -msse2")
 
