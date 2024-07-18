@@ -48,7 +48,7 @@ set(CMAKE_CXX_COMPILER /usr/bin/g++)
 if (ENABLE_CUDA)
     # CUDA依赖配置
     find_package(CUDAToolkit REQUIRED)
-    add_definitions(-DEnable_CUDA)
+    add_definitions(-DENABLE_CUDA)
     if(CUDAToolkit_FOUND)
         message(STATUS "Found CUDA Toolkit: ${CUDAToolkit_VERSION}")
         include_directories(${CUDAToolkit_INCLUDE_DIRS})
