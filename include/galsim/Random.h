@@ -229,8 +229,10 @@ namespace galsim {
          * @param data  The array into which to add the values
          */
         void addGenerate(long long N, double* data);
-
+        long get_init_seed()
+        {return init_seed;}
    protected:
+        long init_seed;
         struct BaseDeviateImpl;
         shared_ptr<BaseDeviateImpl> _impl;
 

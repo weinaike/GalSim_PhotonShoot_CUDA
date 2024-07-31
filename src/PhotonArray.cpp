@@ -25,6 +25,10 @@
 #include <algorithm>
 #include <numeric>
 #include "PhotonArray.h"
+#ifdef ENABLE_CUDA
+#include "cuda_kernels/CuPhotonArray.h"
+#endif
+#include "time.h"
 
 namespace galsim {
 
@@ -38,7 +42,33 @@ namespace galsim {
     {
         _x = &_vx[0];
         _y = &_vy[0];
-        _flux = &_vflux[0];
+        _flux = &_vflux[0]; 
+    }
+
+
+    PhotonArray::PhotonArray(size_t N, double* x, double* y, double* flux,
+                double* dxdz, double* dydz, double* wave, bool is_corr) :
+        _N(N), _x(x), _y(y), _flux(flux), _dxdz(dxdz), _dydz(dydz), _wave(wave),
+        _is_correlated(is_corr) {
+#ifdef ENABLE_CUDA
+        // Allocate memory on the GPU
+        if(N > 0 && _x_gpu == nullptr)
+        {
+            CUDA_CHECK_RETURN(cudaMalloc((void**)&_x_gpu, N * sizeof(double)));
+            CUDA_CHECK_RETURN(cudaMalloc((void**)&_y_gpu, N * sizeof(double)));
+            CUDA_CHECK_RETURN(cudaMalloc((void**)&_flux_gpu, N * sizeof(double)));
+        }
+#endif       
+    }
+
+    PhotonArray::~PhotonArray()
+    {
+#ifdef ENABLE_CUDA        
+        // Allocate memory on the GPU
+        CUDA_CHECK_RETURN(cudaFree(_x_gpu));
+        CUDA_CHECK_RETURN(cudaFree(_y_gpu));
+        CUDA_CHECK_RETURN(cudaFree(_flux_gpu));   
+#endif     
     }
 
     template <typename T>
@@ -88,8 +118,12 @@ namespace galsim {
 
     double PhotonArray::getTotalFlux() const
     {
+#ifdef ENABLE_CUDA
+        return PhotonArray_getTotalFlux(_flux_gpu, _N);
+#else
         double total = 0.;
         return std::accumulate(_flux, _flux+_N, total);
+#endif
     }
 
     void PhotonArray::setTotalFlux(double flux)
@@ -108,13 +142,25 @@ namespace galsim {
 
     void PhotonArray::scaleFlux(double scale)
     {
+#ifdef ENABLE_CUDA
+        PhotonArray_scale(_flux_gpu, _N, scale);
+        CUDA_CHECK_RETURN(cudaMemcpy(_flux, _flux_gpu, _N * sizeof(double), cudaMemcpyDeviceToHost));
+#else
         std::transform(_flux, _flux+_N, _flux, Scaler(scale));
+#endif
     }
 
     void PhotonArray::scaleXY(double scale)
     {
+#ifdef ENABLE_CUDA
+        PhotonArray_scale(_x_gpu, _N, scale);
+        PhotonArray_scale(_y_gpu, _N, scale);
+        CUDA_CHECK_RETURN(cudaMemcpy(_x, _x_gpu, _N * sizeof(double), cudaMemcpyDeviceToHost));
+        CUDA_CHECK_RETURN(cudaMemcpy(_y, _y_gpu, _N * sizeof(double), cudaMemcpyDeviceToHost));
+#else
         std::transform(_x, _x+_N, _x, Scaler(scale));
         std::transform(_y, _y+_N, _y, Scaler(scale));
+#endif
     }
 
     void PhotonArray::assignAt(int istart, const PhotonArray& rhs)
@@ -205,17 +251,39 @@ namespace galsim {
         if (!b.isDefined())
             throw std::runtime_error("Attempting to PhotonArray::addTo an Image with"
                                      " undefined Bounds");
-
-        double addedFlux = 0.;
-        for (size_t i=0; i<size(); i++) {
-            int ix = int(floor(_x[i] + 0.5));
-            int iy = int(floor(_y[i] + 0.5));
-            if (b.includes(ix,iy)) {
-                target(ix,iy) += _flux[i];
-                addedFlux += _flux[i];
+        #ifdef ENABLE_CUDA
+            // cuda version
+            printf("cuda version\n");
+            time_t start, end;
+            start = clock();
+            // PhotonArray_cpuToGpu(_x, _y, _flux, _x_gpu, _y_gpu, _flux_gpu, _N);
+            double addedFlux = PhotonArray_addTo_cuda(target, _x_gpu, _y_gpu, _flux_gpu, _N);           
+            printf("addedFlux = %f\n", addedFlux);
+            end = clock();
+            double time = (double)(end - start) / CLOCKS_PER_SEC * 1000;
+            printf("addto time: %f ms\n", time);
+            return addedFlux;
+        #else    
+            printf("c++ version\n");
+            time_t start, end;
+            start = clock();
+            double addedFlux = 0.;
+            for (size_t i=0; i<size(); i++) {
+                int ix = int(floor(_x[i] + 0.5));
+                int iy = int(floor(_y[i] + 0.5));
+                if (b.includes(ix,iy)) {
+                    target(ix,iy) += _flux[i];
+                    addedFlux += _flux[i];
+                }
             }
-        }
-        return addedFlux;
+            printf("addedFlux = %f\n", addedFlux);
+            end = clock();
+            double time = (double)(end - start) / CLOCKS_PER_SEC * 1000;
+            printf("addto time: %f ms\n", time);
+            
+            return addedFlux;
+        #endif
+
     }
 
     // instantiate template functions for expected image types

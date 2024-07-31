@@ -17,7 +17,7 @@
  *    and/or other materials provided with the distribution.
  */
 
-//#define DEBUGLOGGING
+// #define DEBUGLOGGING
 
 #include "SBSersic.h"
 #include "SBSersicImpl.h"
@@ -27,7 +27,8 @@
 #include "math/Gamma.h"
 #include "math/Hankel.h"
 #include "fmath/fmath.hpp"
-
+#include "time.h"
+#include "cuda_kernels/CuPhotonArray.h"
 namespace galsim {
 
     inline double fast_pow(double x, double y)
@@ -800,9 +801,40 @@ namespace galsim {
         dbg<<"Sersic shoot: N = "<<photons.size()<<std::endl;
         dbg<<"Target flux = "<<getFlux()<<std::endl;
         // Get photons from the SersicInfo structure, rescale flux and size for this instance
+        clock_t start, end;
+        start = clock();
+
+
         _info->shoot(photons,ud);
+        end = clock();
+        double time1 = (double)(end - start) / CLOCKS_PER_SEC * 1000;
+        
+
+        start = clock();
+        // double * _flux_gpu = photons.getFluxArrayGpu();
+        // double * _flux = photons.getFluxArray();
+        // int _N = photons.size();
+        // PhotonArray_scale(_flux_gpu, _N, _shootnorm);
+        
+        // double * _x_gpu = photons.getXArrayGpu();
+        // double * _x = photons.getXArray();
+        // PhotonArray_scale(_x_gpu, _N, _shootnorm);
+        
+        // double * _y_gpu = photons.getYArrayGpu();
+        // double * _y = photons.getYArray();        
+        // PhotonArray_scale(_y_gpu, _N, _shootnorm);
+        
+        // PhotonArray_gpuToCpu(_x, _y, _flux, _x_gpu, _y_gpu, _flux_gpu, _N);
+        
         photons.scaleFlux(_shootnorm);
         photons.scaleXY(_r0);
+
+        end = clock();
+        double time2 = (double)(end - start) / CLOCKS_PER_SEC * 1000;
+
+        printf("_info->shoot: %.2f ms,  scaleFlux + scaleXY %.2f ms\n", time1,  time2);
+        
+
         dbg<<"Sersic Realized flux = "<<photons.getTotalFlux()<<std::endl;
     }
 }

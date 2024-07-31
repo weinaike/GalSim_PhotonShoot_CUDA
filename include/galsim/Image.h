@@ -35,6 +35,9 @@
 
 #include "Std.h"
 #include "Bounds.h"
+#ifdef ENABLE_CUDA
+#include <cuda_runtime.h>
+#endif
 
 template <typename T>
 struct Traits
@@ -339,6 +342,7 @@ namespace galsim {
 
         shared_ptr<T> _owner;  // manages ownership; _owner.get() != _data if subimage
         T* _data;                     // pointer to be used for this image
+        T* _data_gpu = nullptr;                 // pointer to be used for this image (gpu)
         const T* _maxptr;             // one-past-the-end of space allocated for the original image
         ptrdiff_t _nElements;         // number of elements allocated in memory
         int _step;                    // number of elements between cols (normally 1)
@@ -544,6 +548,35 @@ namespace galsim {
          *  pointer.  (T*, not const T*)
          */
         T* getData() { return this->_data; }
+
+#ifdef ENABLE_CUDA        
+        T* getGpuData() 
+        { 
+            if(this->_data_gpu == nullptr) 
+            {
+                cudaMalloc((void**)&this->_data_gpu, this->_nElements * sizeof(T));
+            }
+            if(this->_data_gpu)
+            {
+                cudaMemcpy(this->_data_gpu, this->_data, this->_nElements * sizeof(T), cudaMemcpyHostToDevice);
+            }
+            return this->_data_gpu;
+        }
+        ~ImageView()
+        {
+            if(this->_data_gpu)
+            {
+                cudaFree(this->_data_gpu);
+            }
+        }
+        void copyGpuDataToCpu() 
+        { 
+            cudaMemcpy(this->_data, this->_data_gpu, this->_nElements * sizeof(T), cudaMemcpyDeviceToHost);
+        }
+#endif
+
+
+
         const T* getMaxPtr() { return this->_maxptr; }
 
         /**

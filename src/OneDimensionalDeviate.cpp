@@ -17,13 +17,15 @@
  *    and/or other materials provided with the distribution.
  */
 
-//#define DEBUGLOGGING
+// #define DEBUGLOGGING
 
 #include "OneDimensionalDeviate.h"
+#include "cuda_kernels/CuPhotonArray.h"
+#include "cuda_kernels/CuProbabilityTree.h"
 #include "integ/Int.h"
 #include "SBProfile.h"
 #include "math/Angle.h"
-
+#include "time.h"
 // Define this variable to find azimuth (and sometimes radius within a unit disc) of 2d photons by
 // drawing a uniform deviate for theta, instead of drawing 2 deviates for a point on the unit
 // circle and rejecting corner photons.
@@ -102,7 +104,7 @@ namespace galsim {
             xassert(df1 == f2 - f1);
             xassert(df2 == f3 - f2);
             xassert(df1 * df2 < 0.);
-            xassert(fatLeft == (x2-x1) > (x3-x2));
+            xassert(fatLeft == ((x2-x1) > (x3-x2)));
 
             if (fatLeft) {
                 xdbg<<"fat left\n";
@@ -320,6 +322,23 @@ namespace galsim {
         return result;
     }
 
+#ifdef ENABLE_CUDA
+    void Interval::get_interval_data(Device_Interval & data)
+    {
+        data.shoot_accuracy = _gsparams.shoot_accuracy;
+        data._a = _a;
+        data._b = _b;
+        data._c = _c;
+        data._d = _d;
+        data._flux = _flux;
+        data._fluxIsReady = _fluxIsReady;
+        data._isRadial = _isRadial;
+        data._xLower = _xLower;
+        data._xRange = _xRange;
+        data._xUpper = _xUpper;
+    }
+#endif
+
     OneDimensionalDeviate::OneDimensionalDeviate(const FluxDensity& fluxDensity,
                                                  std::vector<double>& range,
                                                  bool isRadial, double nominal_flux,
@@ -417,8 +436,59 @@ namespace galsim {
         double thresh = std::numeric_limits<double>::epsilon() * totalAbsoluteFlux;
         dbg<<"thresh = "<<thresh<<std::endl;
         _pt.buildTree(thresh);
+#ifdef ENABLE_CUDA
+
+        time_t start, end;
+        start = clock();
+
+        _pt.CopyTreeToGpu();        
+
+        end = clock();
+        double time = (double)(end - start) / CLOCKS_PER_SEC * 1000;
+        printf("CopyTreeToGpu time: %f ms\n", time);
+        
+#endif
     }
 
+#ifdef ENABLE_CUDA
+    void OneDimensionalDeviate::shoot(PhotonArray& photons, UniformDeviate ud, bool xandy) const
+    {
+        const int N = photons.size();
+        dbg<<"OneDimentionalDeviate shoot: N = "<<N<<std::endl;
+        dbg<<"Target flux = 1.\n";
+        dbg<<"isradial? "<<_isRadial<<std::endl;
+        dbg<<"xandy = "<<xandy<<std::endl;
+        dbg<<"N = "<<N<<std::endl;
+        xassert(N>=0);
+        if (N==0) return;
+        double totalAbsoluteFlux = getPositiveFlux() + getNegativeFlux();
+        dbg<<"totalAbsFlux = "<<totalAbsoluteFlux<<std::endl;
+        double fluxPerPhoton = totalAbsoluteFlux / N;
+        if (xandy) fluxPerPhoton *= totalAbsoluteFlux;
+        dbg<<"fluxPerPhoton = "<<fluxPerPhoton<<std::endl;
+        long seed = ud.get_init_seed();
+        // For each photon, first decide which Interval it's in, then drawWithin the interval.
+        if (_isRadial) {
+
+
+            double* _x_gpu = photons.getXArrayGpu();
+            double* _y_gpu = photons.getYArrayGpu();
+            double* _flux_gpu = photons.getFluxArrayGpu();
+            _pt.find_and_interpolateFlux(seed, _x_gpu, _y_gpu, _flux_gpu, N, fluxPerPhoton);
+
+            // double* x = photons.getXArray();
+            // double* y = photons.getYArray();
+            // double* flux = photons.getFluxArray();
+            // PhotonArray_gpuToCpu(x, y, flux, _x_gpu, _y_gpu, _flux_gpu, N);
+
+        } 
+        else 
+        {
+            //todo
+        }
+        dbg<<"OneDimentionalDeviate Realized flux = "<<photons.getTotalFlux()<<std::endl;
+    }
+#else
     void OneDimensionalDeviate::shoot(PhotonArray& photons, UniformDeviate ud, bool xandy) const
     {
         const int N = photons.size();
@@ -490,5 +560,5 @@ namespace galsim {
         }
         dbg<<"OneDimentionalDeviate Realized flux = "<<photons.getTotalFlux()<<std::endl;
     }
-
+#endif
 } // namespace galsim

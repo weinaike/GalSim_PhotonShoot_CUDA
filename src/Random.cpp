@@ -84,7 +84,7 @@ namespace galsim {
 
     BaseDeviate::BaseDeviate(long lseed) :
         _impl(new BaseDeviateImpl())
-    { seed(lseed); }
+    { seed(lseed); init_seed = lseed;}
 
     BaseDeviate::BaseDeviate(const BaseDeviate& rhs) :
         _impl(rhs._impl)

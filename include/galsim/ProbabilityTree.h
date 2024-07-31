@@ -97,7 +97,7 @@ namespace galsim {
          * @brief Construct the tree from current vector elements.
          * @param[in] threshold that have flux <= this value are not included in the tree.
          */
-        void buildTree(double threshold=0.)
+        virtual void buildTree(double threshold=0.)
         {
             dbg<<"buildTree\n";
             assert(!empty());
@@ -138,7 +138,7 @@ namespace galsim {
 #endif
         }
 
-    private:
+    public:
 
         /// @brief A private class that wraps the members in their tree information
         class Element
@@ -279,7 +279,7 @@ namespace galsim {
             double _invAbsFlux; ///< 1./_absFlux
 
         };
-
+    private:
         /// @brief Comparison class to sort inputs in *descending* flux order.
         class FluxCompare
         {
@@ -332,7 +332,7 @@ namespace galsim {
                 for(int i=i1; i<i2; ++i) _shortcut[i] = element;
             }
         }
-
+    protected:
         Element* _root;  ///< root of the tree;
         double _totalAbsFlux; ///< Stored total unnormalized probability
 

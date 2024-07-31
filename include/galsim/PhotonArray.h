@@ -68,11 +68,9 @@ namespace galsim {
          * @param[in] wave      An array of the initial wavelength values (may be 0)
          * @param[in] is_corr   A boolean indicating whether the current values are correlated.
          */
-        PhotonArray(size_t N, double* x, double* y, double* flux,
-                    double* dxdz, double* dydz, double* wave, bool is_corr) :
-            _N(N), _x(x), _y(y), _flux(flux), _dxdz(dxdz), _dydz(dydz), _wave(wave),
-            _is_correlated(is_corr) {}
-
+        PhotonArray(size_t N, double* x, double* y, double* flux,double* dxdz, double* dydz, double* wave, bool is_corr);
+        
+        ~PhotonArray();
         /**
          * @brief Accessor for array size
          *
@@ -98,6 +96,11 @@ namespace galsim {
         const double* getWavelengthArray() const { return _wave; }
         bool hasAllocatedAngles() const { return _dxdz != 0 && _dydz != 0; }
         bool hasAllocatedWavelengths() const { return _wave != 0; }
+
+        double* getXArrayGpu() { return _x_gpu; }
+        double* getYArrayGpu() { return _y_gpu; }
+        double* getFluxArrayGpu() { return _flux_gpu; }
+
         /**
          * @}
          */
@@ -291,6 +294,11 @@ namespace galsim {
         std::vector<double> _vx;
         std::vector<double> _vy;
         std::vector<double> _vflux;
+
+        double* _x_gpu = nullptr;             // Array holding x coords of photons
+        double* _y_gpu = nullptr;             // Array holding y coords of photons
+        double* _flux_gpu = nullptr;          // Array holding flux of photons
+
     };
 
 } // end namespace galsim

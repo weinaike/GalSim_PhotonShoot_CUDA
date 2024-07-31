@@ -47,6 +47,10 @@ set(CMAKE_CXX_COMPILER /usr/bin/g++)
 
 if (ENABLE_CUDA)
     # CUDA依赖配置
+
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler -fPIC")
+    set(CMAKE_CUDA_ARCHITECTURES 80)
+
     find_package(CUDAToolkit REQUIRED)
     add_definitions(-DENABLE_CUDA)
     if(CUDAToolkit_FOUND)
@@ -64,8 +68,8 @@ if (ENABLE_CUDA)
         message(STATUS "CU_SRC: ${f}")
     endforeach()
 
-    add_library(cuda_lib SHARED ${CU_SRC})
-    target_link_libraries(cuda_lib PRIVATE ${CUDA_LIBS})    
+    add_library(cuda_lib STATIC ${CU_SRC})
+    # target_link_libraries(cuda_lib PRIVATE ${CUDA_LIBS})    
 
 endif ()
 
@@ -105,11 +109,9 @@ endif()
 
 
 # Galsim库头文件
-include_directories(${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/include/galsim)
+include_directories(${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/include/galsim ${CMAKE_SOURCE_DIR}/src)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -pthread -Wsign-compare -DNDEBUG -fPIC -fwrapv -O2 -Wall -std=c++11 -fvisibility=hidden -fopenmp -msse2")
-
-# add_subdirectory(src)
 
 
 # 编译galsim src c++ 文件
@@ -129,8 +131,11 @@ file(GLOB PYSOURCES "pysrc/*.cpp")
 
 add_library(cpython_galsim  SHARED  ${PYSOURCES})
 # set_target_properties(cpython_galsim PROPERTIES LINK_FLAGS "-Wl,-rpath,${FFTW3_INCLUDES}")
-target_link_libraries(cpython_galsim galsim ${FFTW3_LIBRARIES} pthread gomp ${PYTHON_LIBRARIES} ${pybind11_LIBRARIES}) 
-
+if (ENABLE_CUDA)
+    target_link_libraries(cpython_galsim galsim cuda_lib ${FFTW3_LIBRARIES} pthread gomp ${PYTHON_LIBRARIES} ${pybind11_LIBRARIES} ${CUDA_LIBS}) 
+else()
+    target_link_libraries(cpython_galsim galsim ${FFTW3_LIBRARIES} pthread gomp ${PYTHON_LIBRARIES} ${pybind11_LIBRARIES} ) 
+endif()
 
 # 设置动态库名称，与安装路径
 set_target_properties(cpython_galsim PROPERTIES OUTPUT_NAME ${LIB_NAME}  PREFIX "")
