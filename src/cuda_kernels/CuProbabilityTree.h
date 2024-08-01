@@ -41,11 +41,27 @@ namespace galsim {
 
         /// @brief Destructor - kill the `Element`s that have been stored away
         ~CuIntervalProbabilityTree() { 
-            if (_root) delete _root; 
+            if (_root != nullptr)
+            {
+                delete _root; 
+                _root = nullptr;
+            } 
             // 释放 GPU 端的内存//有问题
-            if (_d_elements) cudaFree(_d_elements);
-            if (_d_shortcut) cudaFree(_d_shortcut);
-            if (_d_interval) cudaFree(_d_interval);
+            if (_d_elements != nullptr)
+            {
+                cudaFree(_d_elements);
+                _d_elements = nullptr;
+            } 
+            if (_d_shortcut != nullptr) 
+            {
+                cudaFree(_d_shortcut);
+                _d_shortcut = nullptr;
+            }
+            if (_d_interval != nullptr)
+            {
+                cudaFree(_d_interval);
+                _d_interval = nullptr;
+            } 
 
         }
    
@@ -70,10 +86,10 @@ namespace galsim {
 
     private:       
         // GPU 端的指针
-        DeviceElement* _d_elements;
-        DeviceElement** _d_shortcut;
+        DeviceElement* _d_elements = nullptr;
+        DeviceElement** _d_shortcut = nullptr;
         int _shortcutSize;
-        Device_Interval* _d_interval;
+        Device_Interval* _d_interval = nullptr;
 
     };
 

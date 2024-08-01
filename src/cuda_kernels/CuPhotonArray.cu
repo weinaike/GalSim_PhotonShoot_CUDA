@@ -15,6 +15,25 @@ namespace galsim
     };
 
 
+    __global__ void affineTransformKernel(double* d_x, double* d_y, double mA, double mB, double mC, double mD, double dx, double dy, int n) {
+        int idx = blockIdx.x * blockDim.x + threadIdx.x;
+        if (idx < n) {
+            double x = d_x[idx];
+            double y = d_y[idx];
+            d_x[idx] = mA*x + mB*y + dx;
+            d_y[idx] = mC*x + mD*y + dy;
+        }
+    }
+
+    void PhotonArray_fwdXY(double mA, double mB, double mC, double mD, double dx, double dy, double* _x_gpu, double* _y_gpu, int _n) 
+    {
+        int blockSize = 256;
+        int numBlocks = (_n + blockSize - 1) / blockSize;
+        affineTransformKernel<<<numBlocks, blockSize>>>(_x_gpu, _y_gpu, mA, mB, mC, mD, dx, dy, _n);
+    }
+
+
+
     template <typename T>
     __global__ void photonArray_addTo_Kernel_1(double* added_flux, double* x, double* y, double* flux, size_t size, T* target, cuBounds* cub)
     {
@@ -111,7 +130,7 @@ namespace galsim
         start = clock();
         
 
-        int blockSize = 1024;
+        int blockSize = 256;
         int numBlocks = (_N + blockSize - 1) / blockSize;
         scaleKernel<<<numBlocks, blockSize>>>(d_data, _N, scale);
         CUDA_CHECK_RETURN(cudaGetLastError()); 
@@ -119,7 +138,7 @@ namespace galsim
 
         end = clock();
         double time = (double)(end - start) / CLOCKS_PER_SEC * 1000;
-        printf("PhotonArray_scale time: %f ms,    %d\n", time, _N);
+        // printf("PhotonArray_scale time: %f ms,    %d\n", time, _N);
 
     }
 
@@ -130,7 +149,7 @@ namespace galsim
     {
         int blockSize = 256;
         int numBlocks = (_N + blockSize - 1) / blockSize;
-        double* d_result;
+        double* d_result = nullptr;
         double result = 0.0;
         CUDA_CHECK_RETURN(cudaMalloc((void**) &d_result, sizeof(double)));
         CUDA_CHECK_RETURN(cudaMemcpy(d_result, &result, sizeof(double), cudaMemcpyHostToDevice));
@@ -216,7 +235,7 @@ namespace galsim
         CUDA_CHECK_RETURN(cudaFree(d_cub));
         end = clock();
         double time = (double)(end - start) / CLOCKS_PER_SEC * 1000;
-        printf("PhotonArray_addTo_cuda time: %f ms,    %d\n", time, size);
+        // printf("PhotonArray_addTo_cuda time: %f ms,    %d\n", time, size);
         return addedFlux;
     }
 

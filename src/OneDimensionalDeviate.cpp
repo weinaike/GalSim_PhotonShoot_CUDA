@@ -437,16 +437,7 @@ namespace galsim {
         dbg<<"thresh = "<<thresh<<std::endl;
         _pt.buildTree(thresh);
 #ifdef ENABLE_CUDA
-
-        time_t start, end;
-        start = clock();
-
-        _pt.CopyTreeToGpu();        
-
-        end = clock();
-        double time = (double)(end - start) / CLOCKS_PER_SEC * 1000;
-        printf("CopyTreeToGpu time: %f ms\n", time);
-        
+        _pt.CopyTreeToGpu();
 #endif
     }
 
@@ -466,7 +457,7 @@ namespace galsim {
         double fluxPerPhoton = totalAbsoluteFlux / N;
         if (xandy) fluxPerPhoton *= totalAbsoluteFlux;
         dbg<<"fluxPerPhoton = "<<fluxPerPhoton<<std::endl;
-        long seed = ud.get_init_seed();
+        long seed = ud.get_init_seed(); // 这个要生效， ud要改为引用 &ud
         // For each photon, first decide which Interval it's in, then drawWithin the interval.
         if (_isRadial) {
 

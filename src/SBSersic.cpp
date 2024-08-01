@@ -778,7 +778,6 @@ namespace galsim {
     void SersicInfo::shoot(PhotonArray& photons, UniformDeviate ud) const
     {
         dbg<<"Target flux = 1.0\n";
-
         if (!_sampler) {
             // Set up the classes for photon shooting
             _radial.reset(new SersicRadialFunction(_invn));
@@ -801,40 +800,9 @@ namespace galsim {
         dbg<<"Sersic shoot: N = "<<photons.size()<<std::endl;
         dbg<<"Target flux = "<<getFlux()<<std::endl;
         // Get photons from the SersicInfo structure, rescale flux and size for this instance
-        clock_t start, end;
-        start = clock();
-
-
-        _info->shoot(photons,ud);
-        end = clock();
-        double time1 = (double)(end - start) / CLOCKS_PER_SEC * 1000;
-        
-
-        start = clock();
-        // double * _flux_gpu = photons.getFluxArrayGpu();
-        // double * _flux = photons.getFluxArray();
-        // int _N = photons.size();
-        // PhotonArray_scale(_flux_gpu, _N, _shootnorm);
-        
-        // double * _x_gpu = photons.getXArrayGpu();
-        // double * _x = photons.getXArray();
-        // PhotonArray_scale(_x_gpu, _N, _shootnorm);
-        
-        // double * _y_gpu = photons.getYArrayGpu();
-        // double * _y = photons.getYArray();        
-        // PhotonArray_scale(_y_gpu, _N, _shootnorm);
-        
-        // PhotonArray_gpuToCpu(_x, _y, _flux, _x_gpu, _y_gpu, _flux_gpu, _N);
-        
+        _info->shoot(photons,ud);        
         photons.scaleFlux(_shootnorm);
-        photons.scaleXY(_r0);
-
-        end = clock();
-        double time2 = (double)(end - start) / CLOCKS_PER_SEC * 1000;
-
-        printf("_info->shoot: %.2f ms,  scaleFlux + scaleXY %.2f ms\n", time1,  time2);
-        
-
+        photons.scaleXY(_r0); 
         dbg<<"Sersic Realized flux = "<<photons.getTotalFlux()<<std::endl;
     }
 }

@@ -20,7 +20,7 @@
 // PhotonArray Class members
 //
 
-//#define DEBUGLOGGING
+// #define DEBUGLOGGING
 
 #include <algorithm>
 #include <numeric>
@@ -29,6 +29,12 @@
 #include "cuda_kernels/CuPhotonArray.h"
 #endif
 #include "time.h"
+
+const double EPSILON = 1e-7;
+bool isCloseToZero(double value) {
+    return fabs(value) < EPSILON;
+}
+
 
 namespace galsim {
 
@@ -43,6 +49,15 @@ namespace galsim {
         _x = &_vx[0];
         _y = &_vy[0];
         _flux = &_vflux[0]; 
+#ifdef ENABLE_CUDA
+        // Allocate memory on the GPU
+        if(N > 0 && _x_gpu == nullptr)
+        {
+            CUDA_CHECK_RETURN(cudaMalloc((void**)&_x_gpu, N * sizeof(double)));
+            CUDA_CHECK_RETURN(cudaMalloc((void**)&_y_gpu, N * sizeof(double)));
+            CUDA_CHECK_RETURN(cudaMalloc((void**)&_flux_gpu, N * sizeof(double)));
+        }
+#endif           
     }
 
 
@@ -68,6 +83,9 @@ namespace galsim {
         CUDA_CHECK_RETURN(cudaFree(_x_gpu));
         CUDA_CHECK_RETURN(cudaFree(_y_gpu));
         CUDA_CHECK_RETURN(cudaFree(_flux_gpu));   
+        _x_gpu = nullptr;
+        _y_gpu = nullptr;
+        _flux_gpu = nullptr;
 #endif     
     }
 
@@ -142,9 +160,10 @@ namespace galsim {
 
     void PhotonArray::scaleFlux(double scale)
     {
+        if(isCloseToZero(scale - 1.0 )) return;
 #ifdef ENABLE_CUDA
         PhotonArray_scale(_flux_gpu, _N, scale);
-        CUDA_CHECK_RETURN(cudaMemcpy(_flux, _flux_gpu, _N * sizeof(double), cudaMemcpyDeviceToHost));
+        // CUDA_CHECK_RETURN(cudaMemcpy(_flux, _flux_gpu, _N * sizeof(double), cudaMemcpyDeviceToHost));
 #else
         std::transform(_flux, _flux+_N, _flux, Scaler(scale));
 #endif
@@ -152,16 +171,47 @@ namespace galsim {
 
     void PhotonArray::scaleXY(double scale)
     {
+        if(isCloseToZero(scale - 1.0 )) return;
 #ifdef ENABLE_CUDA
         PhotonArray_scale(_x_gpu, _N, scale);
         PhotonArray_scale(_y_gpu, _N, scale);
-        CUDA_CHECK_RETURN(cudaMemcpy(_x, _x_gpu, _N * sizeof(double), cudaMemcpyDeviceToHost));
-        CUDA_CHECK_RETURN(cudaMemcpy(_y, _y_gpu, _N * sizeof(double), cudaMemcpyDeviceToHost));
+        // CUDA_CHECK_RETURN(cudaMemcpy(_x, _x_gpu, _N * sizeof(double), cudaMemcpyDeviceToHost));
+        // CUDA_CHECK_RETURN(cudaMemcpy(_y, _y_gpu, _N * sizeof(double), cudaMemcpyDeviceToHost));
 #else
         std::transform(_x, _x+_N, _x, Scaler(scale));
         std::transform(_y, _y+_N, _y, Scaler(scale));
 #endif
     }
+
+    void PhotonArray::fwdXY(double mA, double mB, double mC,  double mD, double dx, double dy)
+    {
+#ifdef ENABLE_CUDA
+        PhotonArray_fwdXY(mA, mB, mC, mD, dx, dy, _x_gpu, _y_gpu, _N);
+#else
+
+        if (isCloseToZero(mA - 1.0 ) && isCloseToZero(mB) && isCloseToZero(mC) && isCloseToZero(mD - 1.0)) {
+            // Special case for no distortion
+            for (int i=0; i<_N; i++) {
+                _x[i] += dx;
+                _y[i] += dy;
+            }
+        } else if( isCloseToZero(mB) && isCloseToZero(mC) ) {
+            // Special case for just a scale and shift
+            for (int i=0; i<_N; i++) {
+                _x[i] = mA*_x[i] + dx;
+                _y[i] = mD*_y[i] + dy;
+            }
+        } else {            // General case
+            for (int i=0; i<_N; i++) {
+                double x = _x[i];
+                double y = _y[i];
+                _x[i] = mA*x + mB*y + dx;
+                _y[i] = mC*x + mD*y + dy;
+            }
+        }
+#endif
+    }
+
 
     void PhotonArray::assignAt(int istart, const PhotonArray& rhs)
     {
@@ -253,18 +303,21 @@ namespace galsim {
                                      " undefined Bounds");
         #ifdef ENABLE_CUDA
             // cuda version
-            printf("cuda version\n");
+            
+            dbg<<"==========cuda version\n";
             time_t start, end;
             start = clock();
             // PhotonArray_cpuToGpu(_x, _y, _flux, _x_gpu, _y_gpu, _flux_gpu, _N);
             double addedFlux = PhotonArray_addTo_cuda(target, _x_gpu, _y_gpu, _flux_gpu, _N);           
-            printf("addedFlux = %f\n", addedFlux);
+            // printf("addedFlux = %f\n", addedFlux);
+            dbg<<"==========addedFlux = "<<addedFlux<<std::endl;
             end = clock();
             double time = (double)(end - start) / CLOCKS_PER_SEC * 1000;
-            printf("addto time: %f ms\n", time);
+            // printf("addto time: %f ms\n", time);
+            dbg<<"==========addto time: "<<time<<" ms\n";
             return addedFlux;
         #else    
-            printf("c++ version\n");
+            dbg<<"==========c++ version\n";
             time_t start, end;
             start = clock();
             double addedFlux = 0.;
@@ -276,10 +329,12 @@ namespace galsim {
                     addedFlux += _flux[i];
                 }
             }
-            printf("addedFlux = %f\n", addedFlux);
+            // printf("addedFlux = %f\n", addedFlux);
+            dbg<<"==========addedFlux = "<<addedFlux<<std::endl;
             end = clock();
             double time = (double)(end - start) / CLOCKS_PER_SEC * 1000;
-            printf("addto time: %f ms\n", time);
+            // printf("addto time: %f ms\n", time);
+            dbg<<"==========addto time: "<<time<<" ms\n";
             
             return addedFlux;
         #endif

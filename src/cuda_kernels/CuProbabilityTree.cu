@@ -91,7 +91,7 @@ namespace galsim
 
         end = clock();
         double time = (double)(end - start) / CLOCKS_PER_SEC * 1000;
-        printf("find_and_interpolateFlux time: %f ms,    %d\n", time, N);
+        // printf("find_and_interpolateFlux time: %f ms,    %d\n", time, N);
     }
 
 
@@ -196,15 +196,13 @@ namespace galsim
         Device_Interval * data_ptr;
         cudaMemcpy(&data_ptr, &gpu_root->data, sizeof(Device_Interval*), cudaMemcpyDeviceToHost);
         
-        // printf("root: %f, %f, %p | gpu_root: %f, %f, %p\n", root->getLeftAbsFlux(), root->getAbsFlux(), root->getData().get(), 
-        //                 leftabsflux, absflux, data_ptr);
         if (root->getData().get() != nullptr)
         {
             Device_Interval* data_ptr; // 指向设备内存的指针
             cudaMemcpy(&data_ptr, &gpu_root->data, sizeof(Device_Interval*), cudaMemcpyDeviceToHost);
             double flux = 0. ;
             cudaMemcpy(&flux, &data_ptr->_flux, sizeof(double), cudaMemcpyDeviceToHost);
-            printf("root flux:%f, gpu flux: %f\n", root->getData()->getFlux(), flux);
+            // printf("root flux:%f, gpu flux: %f\n", root->getData()->getFlux(), flux);
            
         }
         if(root->isNode())

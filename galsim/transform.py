@@ -22,7 +22,7 @@ import numpy as np
 import math
 import cmath
 import copy
-
+import time
 from . import _galsim
 from .gsobject import GSObject
 from .gsparams import GSParams
@@ -228,7 +228,7 @@ class Transformation(GSObject):
             self._original = obj
         self._has_offset = (self._dx != 0. or self._dy != 0.)
         if self._det==0.:
-            raise GalSimError("Attempt to Transform with degenerate matrix");
+            raise GalSimError("Attempt to Transform with degenerate matrix")
 
     @property
     def original(self):
@@ -584,9 +584,15 @@ class Transformation(GSObject):
 
     def _shoot(self, photons, rng):
         self._original._shoot(photons, rng)
-        photons.x, photons.y = self._fwd(photons.x, photons.y)
-        photons.x += self._dx
-        photons.y += self._dy
+        # photons.x, photons.y = self._fwd(photons.x, photons.y)
+        # photons.x += self._dx
+        # photons.y += self._dy
+        mA = self._jac[0, 0]
+        mB = self._jac[0, 1]
+        mC = self._jac[1, 0]
+        mD = self._jac[1, 1]
+        photons.fwdXY(mA, mB, mC, mD, self._dx, self._dy)
+
         photons.scaleFlux(self._flux_scaling)
 
     def _drawKImage(self, image, jac=None):

@@ -476,16 +476,28 @@ class PhotonArray:
         Parameter:
             scale:      The factor by which to scale the fluxes.
         """
-        self._flux *= scale
-
+        # self._flux *= scale
+        self._pa.scaleFlux(scale)
+    
     def scaleXY(self, scale):
         """Scale the photon positions (`x` and `y`) by the given factor.
 
         Parameter:
             scale:      The factor by which to scale the positions.
         """
-        self._x *= scale
-        self._y *= scale
+        # self._x *= scale
+        # self._y *= scale
+        self._pa.scaleXY(scale)
+
+    def fwdXY(self, mA, mB, mC, mD, dx, dy):
+        """Apply a forward transformation to the photon positions.
+
+        Parameters:
+            mA, mB, mC, mD:   The transformation matrix.
+            dx, dy:           The offsets to apply after the transformation.
+        """
+        self._pa.fwdXY(mA, mB, mC, mD, dx, dy)
+        
 
     def assignAt(self, istart, rhs):
         """Assign the contents of another `PhotonArray` to this one starting at istart.

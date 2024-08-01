@@ -1671,16 +1671,18 @@ class ChromaticAtmosphere(ChromaticObject):
         # Apply the wavelength-dependent scaling
         if self.alpha != 0.:
             scale = (w/self.base_wavelength)**self.alpha
-            photons.x *= scale
-            photons.y *= scale
+            photons.scaleXY(scale)
+            # photons.x *= scale
+            # photons.y *= scale
 
         # Apply DCR
         shift_magnitude = dcr.get_refraction(w, self.zenith_angle, **self.kw)
         shift_magnitude -= self.base_refraction
         shift_magnitude *= radians / self.scale_unit
         sinp, cosp = self.parallactic_angle.sincos()
-        photons.x += -shift_magnitude * sinp
-        photons.y += shift_magnitude * cosp
+        # photons.x += -shift_magnitude * sinp
+        # photons.y += shift_magnitude * cosp
+        photons.fwdXY(1, 0, 0, 1, -shift_magnitude * sinp, shift_magnitude * cosp)
 
     def evaluateAtWavelength(self, wave):
         """Evaluate this chromatic object at a particular wavelength.
@@ -1996,19 +1998,23 @@ class ChromaticTransformation(ChromaticObject):
                 jac, offset, flux_ratio = self.ct._getTransformations(wave)
 
                 # cf. Transformation._fwd_normal
+                mA, mB, mC, mD = 1, 0, 0, 1
                 if jac is not None:
-                    temp = jac[0,1] * photons.y
-                    photons.y *= jac[1,1]
-                    photons.y += jac[1,0] * photons.x
-                    photons.x *= jac[0,0]
-                    photons.x += temp
+                    # temp = jac[0,1] * photons.y
+                    # photons.y *= jac[1,1]
+                    # photons.y += jac[1,0] * photons.x
+                    # photons.x *= jac[0,0]
+                    # photons.x += temp
+                    mA, mB, mC, mD = jac[0,0], jac[0,1], jac[1,0], jac[1,1]
 
                     det = jac[0,0] * jac[1,1] - jac[0,1] * jac[1,0]
                     flux_ratio *= np.abs(det)
 
-                photons.x += offset[0]
-                photons.y += offset[1]
-                photons.flux *= flux_ratio
+                # photons.x += offset[0]
+                # photons.y += offset[1]
+                # photons.flux *= flux_ratio
+                photons.fwdXY(mA, mB, mC, mD, offset[0], offset[1])
+                photons.scaleFlux(flux_ratio)
 
         return ChromaticTransformationPhotonOp(self)
 

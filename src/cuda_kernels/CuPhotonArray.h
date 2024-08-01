@@ -18,6 +18,7 @@ namespace galsim
 
     void PhotonArray_scale(double * d_data, size_t N ,  double scale);
     double PhotonArray_getTotalFlux(double * d_flux, size_t _N);
+    void PhotonArray_fwdXY(double mA, double mB, double mC, double mD, double dx, double dy, double* _x_gpu, double* _y_gpu, int _n) ;
 
     int PhotonArray_cpuToGpu(double * x, double * y, double * flux, double * d_x, double * d_y, double * d_flux, size_t _N);
 

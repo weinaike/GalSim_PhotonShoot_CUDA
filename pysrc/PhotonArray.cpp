@@ -48,7 +48,10 @@ namespace galsim {
         py::class_<PhotonArray> pyPhotonArray(_galsim, "PhotonArray");
         pyPhotonArray
             .def(py::init(&construct))
-            .def("convolve", &PhotonArray::convolve);
+            .def("convolve", &PhotonArray::convolve)
+            .def("scaleXY", &PhotonArray::scaleXY)       // 添加对 scaleXY 方法的绑定
+            .def("fwdXY", &PhotonArray::fwdXY)           // 添加对 fwdXY 方法的绑定
+            .def("scaleFlux", &PhotonArray::scaleFlux);  // 添加对 scaleFlux 方法的绑定
         WrapTemplates<double>(pyPhotonArray);
         WrapTemplates<float>(pyPhotonArray);
     }

@@ -200,6 +200,13 @@ namespace galsim {
         void scaleXY(double scale);
 
         /**
+         * @brief Rescale all photon positions by the given factor
+         * @param[in] mA, mB, mC, mD Scaling factor for all positions
+         * @param[in] _dx, _dy Scaling factor for all positions         * 
+         */
+        void fwdXY(double mA, double mB, double mC,  double mD, double  dx, double dy);
+
+        /**
          * @brief Assign the contents of another array to a portion of this one.
          *
          * @param[in] istart    The starting index at which to assign the contents of rhs

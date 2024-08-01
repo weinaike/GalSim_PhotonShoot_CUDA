@@ -36,7 +36,7 @@
 #include "Std.h"
 #include "Bounds.h"
 #ifdef ENABLE_CUDA
-#include <cuda_runtime.h>
+#include "cuda_kernels/cuda_check.h"
 #endif
 
 template <typename T>
@@ -554,11 +554,11 @@ namespace galsim {
         { 
             if(this->_data_gpu == nullptr) 
             {
-                cudaMalloc((void**)&this->_data_gpu, this->_nElements * sizeof(T));
+                CUDA_CHECK_RETURN(cudaMalloc((void**)&this->_data_gpu, this->_nElements * sizeof(T)));
             }
             if(this->_data_gpu)
             {
-                cudaMemcpy(this->_data_gpu, this->_data, this->_nElements * sizeof(T), cudaMemcpyHostToDevice);
+                CUDA_CHECK_RETURN(cudaMemcpy(this->_data_gpu, this->_data, this->_nElements * sizeof(T), cudaMemcpyHostToDevice));
             }
             return this->_data_gpu;
         }
@@ -566,12 +566,13 @@ namespace galsim {
         {
             if(this->_data_gpu)
             {
-                cudaFree(this->_data_gpu);
+                CUDA_CHECK_RETURN(cudaFree(this->_data_gpu));
+                this->_data_gpu = nullptr;
             }
         }
         void copyGpuDataToCpu() 
         { 
-            cudaMemcpy(this->_data, this->_data_gpu, this->_nElements * sizeof(T), cudaMemcpyDeviceToHost);
+            CUDA_CHECK_RETURN(cudaMemcpy(this->_data, this->_data_gpu, this->_nElements * sizeof(T), cudaMemcpyDeviceToHost));
         }
 #endif
 

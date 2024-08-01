@@ -21,7 +21,7 @@ __all__ = [ 'GSObject' ]
 import numpy as np
 import math
 import copy
-
+import time
 from . import _galsim
 from .gsparams import GSParams
 from .position import _PositionD, _PositionI, Position, parse_pos_args
@@ -2372,7 +2372,10 @@ class GSObject:
             thisN = min(maxN, Nleft)
 
             try:
+                start = time.time()
                 photons = self.shoot(thisN, rng)
+                end = time.time()
+                # print('shoot time : {:.0f} ms'.format((end-start) * 1000))
             except (GalSimError, NotImplementedError) as e:
                 raise GalSimNotImplementedError(
                         "Unable to draw this GSObject with photon shooting.  Perhaps it "

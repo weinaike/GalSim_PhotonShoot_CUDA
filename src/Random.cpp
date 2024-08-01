@@ -155,6 +155,7 @@ namespace galsim {
 
     void BaseDeviate::seed(long lseed)
     {
+        init_seed = lseed;
         if (lseed == 0) {
             try {
                 seedurandom();

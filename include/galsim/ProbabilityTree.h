@@ -67,7 +67,13 @@ namespace galsim {
         ProbabilityTree() : _root(0) {}
 
         /// @brief Destructor - kill the `Element`s that have been stored away
-        ~ProbabilityTree() { if (_root) delete _root; }
+        ~ProbabilityTree() { 
+            if (_root != nullptr) 
+            {
+                delete _root; 
+                _root = nullptr;
+            }         
+        }
 
         /**
          * @brief Choose a member of the tree based on a uniform deviate
@@ -221,10 +227,13 @@ namespace galsim {
 
             ~Element()
             {
-                if (_left) {
-                    //xassert(_right);
+                if (_left != nullptr) {
                     delete _left;
+                    _left = nullptr;
+                }
+                if(_right != nullptr) {
                     delete _right;
+                    _right = nullptr;
                 }
             }
 
@@ -269,8 +278,8 @@ namespace galsim {
 
             // Each Element has either a dataPtr (if it is a leaf) or left/right (if it is a node)
             shared_ptr<FluxData> _dataPtr; ///< Pointer to the member for this element
-            Element* _left; ///< Pointer to left child member
-            Element* _right; ///< Pointer to right child member
+            Element* _left = nullptr; ///< Pointer to left child member
+            Element* _right = nullptr; ///< Pointer to right child member
 
             /// Total unnorm. probability of all elements before this one in tree
             double _leftAbsFlux;
@@ -333,7 +342,7 @@ namespace galsim {
             }
         }
     protected:
-        Element* _root;  ///< root of the tree;
+        Element* _root = nullptr;  ///< root of the tree;
         double _totalAbsFlux; ///< Stored total unnormalized probability
 
         /// A quicker way to get to a good starting point for find, rather than always
