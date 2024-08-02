@@ -14,6 +14,98 @@ namespace galsim
         int step, stride;
     };
 
+    // CUDA kernel for copying arrays
+    __global__ void copyArray(double* dest, int N_dest, int offset, const double* src, int N_src) {
+        int idx = blockIdx.x * blockDim.x + threadIdx.x;
+        if (idx < N_src && idx + offset < N_dest) {
+            dest[idx + offset] = src[idx];
+        }
+    }
+
+    void PhotonArray_assignAt(double* dest, int N_dest, int offset, const double* src, int N_src) {
+
+        const int blockSize = 256;
+        const int numBlocks = (N_src + blockSize - 1) / blockSize;
+        // Copy _x array
+        copyArray<<<numBlocks, blockSize>>>(dest, N_dest, offset, src, N_src);
+    }
+
+
+
+    // CUDA kernel for adding two arrays
+    __global__ void addArrays(double* a, const double* b, int N) {
+        int idx = blockIdx.x * blockDim.x + threadIdx.x;
+        if (idx < N) {
+            a[idx] += b[idx];
+        }
+    }
+
+    // CUDA kernel for multiplying two arrays with a scale factor
+    __global__ void multiplyArrays(double* a, const double* b, double scale, int N) {
+        int idx = blockIdx.x * blockDim.x + threadIdx.x;
+        if (idx < N) {
+            a[idx] *= b[idx] * scale;
+        }
+    }
+
+
+
+    void PhotonArray_convolve(double* d_x, double* d_y, double* d_flux, 
+                    const double* d_rhs_x, const double* d_rhs_y, const double* d_rhs_flux,
+                    double scale,  int N) 
+    {
+        // Define block and grid sizes
+        int blockSize = 256;
+        int numBlocks = (N + blockSize - 1) / blockSize;
+
+        // Launch kernels
+        addArrays<<<numBlocks, blockSize>>>(d_x, d_rhs_x, N);
+        addArrays<<<numBlocks, blockSize>>>(d_y, d_rhs_y, N);
+        multiplyArrays<<<numBlocks, blockSize>>>(d_flux, d_rhs_flux, scale, N);
+    }
+
+
+    // CUDA kernel for convolveShuffle
+    __global__ void convolveShuffleKernel(double* d_x, double* d_y, double* d_flux, 
+                    const double* d_rhs_x, const double* d_rhs_y, const double* d_rhs_flux, 
+                    int N, long seed) 
+    {
+        int iOut = blockIdx.x * blockDim.x + threadIdx.x;
+        if (iOut >= N) return;
+
+        curandState state;
+        curand_init(seed, iOut, 0, &state);
+        int iIn = int((iOut + 1) * curand_uniform(&state));
+        if (iIn > iOut) iIn = iOut;
+
+        double xSave = 0.0, ySave = 0.0, fluxSave = 0.0;
+        if (iIn < iOut) {
+            xSave = d_x[iOut];
+            ySave = d_y[iOut];
+            fluxSave = d_flux[iOut];
+        }
+
+        d_x[iOut] = d_x[iIn] + d_rhs_x[iOut];
+        d_y[iOut] = d_y[iIn] + d_rhs_y[iOut];
+        d_flux[iOut] = d_flux[iIn] * d_rhs_flux[iOut] * N;
+
+        if (iIn < iOut) {
+            d_x[iIn] = xSave;
+            d_y[iIn] = ySave;
+            d_flux[iIn] = fluxSave;
+        }
+    }
+
+    void PhotonArray_convolveShuffle(double* d_x, double* d_y, double* d_flux, 
+                    const double* d_rhs_x, const double* d_rhs_y, const double* d_rhs_flux, 
+                    int N, long seed) 
+    {
+        // Launch kernel
+        int threadsPerBlock = 256;
+        int blocksPerGrid = (N + threadsPerBlock - 1) / threadsPerBlock;
+        convolveShuffleKernel<<<blocksPerGrid, threadsPerBlock>>>(d_x, d_y, d_flux, d_rhs_x, d_rhs_y, d_rhs_flux, N, seed);
+    }
+
 
     __global__ void affineTransformKernel(double* d_x, double* d_y, double mA, double mB, double mC, double mD, double dx, double dy, int n) {
         int idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -225,7 +317,7 @@ namespace galsim
             cudaDeviceSynchronize();   
         #endif
 
-        // target.copyGpuDataToCpu();
+        target.copyGpuDataToCpu();
 
         // copy memory back to CPU
         CUDA_CHECK_RETURN(cudaMemcpy(&addedFlux, d_added_flux, sizeof(double), cudaMemcpyDeviceToHost));

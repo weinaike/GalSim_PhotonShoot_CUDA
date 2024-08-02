@@ -131,6 +131,9 @@ namespace galsim {
         dbg<<"Done: size = "<<adder.getCount()<<std::endl;
         assert(adder.getCount() <= _N);  // Else we've overrun the photon's arrays.
         _N = adder.getCount();
+#ifdef ENABLE_CUDA
+        PhotonArray_cpuToGpu(_x, _y, _flux, _x_gpu, _y_gpu, _flux_gpu, _N);
+#endif
         return _N;
     }
 
@@ -219,9 +222,17 @@ namespace galsim {
             throw std::runtime_error("Trying to assign past the end of PhotonArray");
 
         const int N2 = rhs.size();
+#ifdef ENABLE_CUDA
+        PhotonArray_assignAt(_x_gpu, _N, istart, rhs.getXArrayGpuConst(), rhs.size());
+        PhotonArray_assignAt(_y_gpu, _N, istart, rhs.getYArrayGpuConst(), rhs.size());
+        PhotonArray_assignAt(_flux_gpu, _N, istart, rhs.getFluxArrayGpuConst(), rhs.size());
+#else
         std::copy(rhs._x, rhs._x+N2, _x+istart);
         std::copy(rhs._y, rhs._y+N2, _y+istart);
         std::copy(rhs._flux, rhs._flux+N2, _flux+istart);
+#endif        
+        // _dxdz, _dydz, _wave, gpu版本未做处理
+        // todo: gpu版本未做处理
         if (hasAllocatedAngles() && rhs.hasAllocatedAngles()) {
             std::copy(rhs._dxdz, rhs._dxdz+N2, _dxdz+istart);
             std::copy(rhs._dydz, rhs._dydz+N2, _dydz+istart);
@@ -248,23 +259,39 @@ namespace galsim {
         // If neither or only one is correlated, we are ok to just use them in order.
         if (rhs.size() != size())
             throw std::runtime_error("PhotonArray::convolve with unequal size arrays");
+#ifdef ENABLE_CUDA
+        const double * rhs_x =  rhs.getXArrayGpuConst();
+        const double * rhs_y =  rhs.getYArrayGpuConst();
+        const double * rhs_flux =  rhs.getFluxArrayGpuConst();
+        PhotonArray_convolve(_x_gpu, _y_gpu, _flux_gpu, rhs_x, rhs_y, rhs_flux, (double)_N, _N) ;
+#else
         // Add x coordinates:
         std::transform(_x, _x+_N, rhs._x, _x, std::plus<double>());
         // Add y coordinates:
         std::transform(_y, _y+_N, rhs._y, _y, std::plus<double>());
         // Multiply fluxes, with a factor of N needed:
         std::transform(_flux, _flux+_N, rhs._flux, _flux, MultXYScale(_N));
-
+#endif
         // If rhs was correlated, then the output will be correlated.
         // This is ok, but we need to mark it as such.
         if (rhs._is_correlated) _is_correlated = true;
     }
 
     void PhotonArray::convolveShuffle(const PhotonArray& rhs, BaseDeviate rng)
-    {
-        UniformDeviate ud(rng);
+    {        
+        
         if (rhs.size() != size())
             throw std::runtime_error("PhotonArray::convolve with unequal size arrays");
+        UniformDeviate ud(rng);
+        long seed = ud.get_init_seed(); // 这个要生效， ud要改为引用 &ud
+#ifdef ENABLE_CUDA
+        
+        const double * rhs_x =  rhs.getXArrayGpuConst();
+        const double * rhs_y =  rhs.getYArrayGpuConst();
+        const double * rhs_flux =  rhs.getFluxArrayGpuConst();
+        PhotonArray_convolveShuffle(_x_gpu, _y_gpu, _flux_gpu, rhs_x, rhs_y, rhs_flux, _N, seed) ;
+
+#else
         double xSave=0.;
         double ySave=0.;
         double fluxSave=0.;
@@ -290,6 +317,7 @@ namespace galsim {
                 _flux[iIn] = fluxSave;
             }
         }
+#endif
     }
 
     template <class T>

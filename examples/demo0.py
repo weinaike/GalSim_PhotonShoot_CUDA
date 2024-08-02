@@ -10,6 +10,16 @@ sersic_galaxy1 = galsim.Sersic(n=sersic_index, half_light_radius=half_light_radi
 sersic_galaxy2 = galsim.Sersic(n=sersic_index+1, half_light_radius=half_light_radius, flux=flux)
 sersic_galaxy3 = galsim.Sersic(n=sersic_index+2, half_light_radius=half_light_radius, flux=flux)
 
+# 定义shear参数
+shear_g1 = 0.1  # shear g1分量
+shear_g2 = 0.2  # shear g2分量
+
+
+# 应用shear变换
+sersic_galaxy1 = sersic_galaxy1.shear(g1=shear_g1, g2=shear_g2)
+sersic_galaxy2 = sersic_galaxy2.shear(g1=shear_g1, g2=shear_g2)
+sersic_galaxy3 = sersic_galaxy3.shear(g1=shear_g1, g2=shear_g2)
+
 # 定义光子射击参数````````     
 num_photons = 1e8  # 光子数量
 
@@ -28,18 +38,18 @@ end = time.time()
 # 打印毫秒
 print('all time : {:.0f} ms'.format((end-start) * 1000))
 print('-------')
-start = time.time()
-sersic_galaxy2.drawImage(image=image, method='phot', n_photons=num_photons, rng=rng)
-end = time.time()
-# 打印毫秒
-print('all time : {:.0f} ms'.format((end-start) * 1000))
-print('-------')
-start = time.time()
-sersic_galaxy3.drawImage(image=image, method='phot', n_photons=num_photons, rng=rng)
-end = time.time()
-# 打印毫秒
-print('all time : {:.0f} ms'.format((end-start) * 1000))
-print('-------')
+# start = time.time()
+# sersic_galaxy2.drawImage(image=image, method='phot', n_photons=num_photons, rng=rng)
+# end = time.time()
+# # 打印毫秒
+# print('all time : {:.0f} ms'.format((end-start) * 1000))
+# print('-------')
+# start = time.time()
+# sersic_galaxy3.drawImage(image=image, method='phot', n_photons=num_photons, rng=rng)
+# end = time.time()
+# # 打印毫秒
+# print('all time : {:.0f} ms'.format((end-start) * 1000))
+# print('-------')
 
 # 保存图像
 image.write('sersic_galaxy.fits')

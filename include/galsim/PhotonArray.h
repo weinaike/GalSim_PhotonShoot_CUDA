@@ -101,6 +101,10 @@ namespace galsim {
         double* getYArrayGpu() { return _y_gpu; }
         double* getFluxArrayGpu() { return _flux_gpu; }
 
+        const double* getXArrayGpuConst() const { return _x_gpu; }
+        const double* getYArrayGpuConst() const { return _y_gpu; }
+        const double* getFluxArrayGpuConst() const { return _flux_gpu; }
+
         /**
          * @}
          */

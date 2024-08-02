@@ -511,8 +511,9 @@ class PhotonArray:
         if istart + rhs.size() > self.size():
             raise GalSimValueError(
                 "The given rhs does not fit into this array starting at %d"%istart, rhs)
-        s = slice(istart, istart + rhs.size())
-        self._copyFrom(rhs, s, slice(None))
+        # s = slice(istart, istart + rhs.size())
+        # self._copyFrom(rhs, s, slice(None))
+        self._pa.assignAt(istart, rhs._pa)
 
     def copyFrom(self, rhs, target_indices=slice(None), source_indices=slice(None),
                  do_xy=True, do_flux=True, do_other=True):
