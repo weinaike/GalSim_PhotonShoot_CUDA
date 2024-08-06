@@ -76,7 +76,79 @@ namespace galsim
         }
     }
 
-    void CuIntervalProbabilityTree::find_and_interpolateFlux(long seed, double * x, double* y, double* flux, int N, double fluxPerPhoton) const
+
+ // CUDA 内核函数，用于生成均匀分布在单位圆内的点
+    __global__ void xandy_rand_shoot_kernel(long seed, bool xandy,
+        double * x, double* y, double* flux, int N, double fluxPerPhoton,  // output
+        DeviceElement** d_shortcut, int shortcutSize, double totalAbsFlux  // find
+        ) 
+    {
+        int idx = blockIdx.x * blockDim.x + threadIdx.x;
+        if (idx < N) {
+            curandState state;
+            curand_init(seed, idx, 0, &state);
+
+            double unitRandom = curand_uniform(&state) ;
+
+            // find 
+            int i = int(unitRandom * shortcutSize);
+            DeviceElement* element = d_shortcut[i];
+            unitRandom *= totalAbsFlux;
+
+            // 用栈来模拟递归
+            while (element->left || element->right) {
+                if (unitRandom < element->right->leftAbsFlux) {
+                    element = element->left;
+                } else {
+                    element = element->right;
+                }
+            }
+            unitRandom = (unitRandom - element->leftAbsFlux) / element->absFlux;
+            Device_Interval * data =  element->data;
+
+            // interpolateFlux
+            double c = unitRandom * data->_c;
+            double dx = c / (sqrt(data->_a * c + data->_b * data->_b) + data->_b);
+
+            double xi = data->_xLower + data->_xRange * dx;
+            double flux_xi =  data->_flux < 0 ? -1. : 1.;
+
+            double yi = 0.;
+            double flux_yi = 1.0;
+            if (xandy) { 
+                unitRandom = curand_uniform(&state) ;
+                // find 
+                int i = int(unitRandom * shortcutSize);
+                DeviceElement* element = d_shortcut[i];
+                unitRandom *= totalAbsFlux;
+
+                // 用栈来模拟递归
+                while (element->left || element->right) {
+                    if (unitRandom < element->right->leftAbsFlux) {
+                        element = element->left;
+                    } else {
+                        element = element->right;
+                    }
+                }
+                unitRandom = (unitRandom - element->leftAbsFlux) / element->absFlux;
+                Device_Interval * data =  element->data;
+
+
+                c = unitRandom * data->_c;
+                dx = c / (sqrt(data->_a * c + data->_b * data->_b) + data->_b);
+                yi = data->_xLower + data->_xRange * dx; 
+                flux_yi =  data->_flux < 0 ? -1. : 1.;
+            }
+
+            x[idx] = xi;
+            y[idx] = yi;
+            flux[idx] = flux_xi* flux_yi*fluxPerPhoton; 
+        }
+    }
+
+
+    void CuIntervalProbabilityTree::find_and_interpolateFlux(long seed, double * x, double* y, double* flux, int N, 
+                    double fluxPerPhoton, const bool isRadial, bool xandy) const
     {
         time_t start, end;
         start = clock();
@@ -84,15 +156,23 @@ namespace galsim
 
         int blockSize = 256; // Example block size
         int numBlocks = (N + blockSize - 1) / blockSize;
-        radial_rand_shoot_kernel<<<numBlocks, blockSize>>>(seed, x, y, flux, N, fluxPerPhoton, 
+        if(isRadial)
+        {
+            radial_rand_shoot_kernel<<<numBlocks, blockSize>>>(seed, x, y, flux, N, fluxPerPhoton, 
                         _d_shortcut, _shortcutSize, this->_totalAbsFlux);
+        }
+        else
+        {
+            xandy_rand_shoot_kernel<<<numBlocks, blockSize>>>(seed, xandy, x, y, flux, N, fluxPerPhoton, 
+                        _d_shortcut, _shortcutSize, this->_totalAbsFlux);
+        }
         CUDA_CHECK_RETURN(cudaGetLastError());        
-
 
         end = clock();
         double time = (double)(end - start) / CLOCKS_PER_SEC * 1000;
         // printf("find_and_interpolateFlux time: %f ms,    %d\n", time, N);
     }
+
 
 
     void CuIntervalProbabilityTree::copyNodesToGPU(const Element* cpuElement, 

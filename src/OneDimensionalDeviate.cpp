@@ -459,24 +459,18 @@ namespace galsim {
         dbg<<"fluxPerPhoton = "<<fluxPerPhoton<<std::endl;
         long seed = ud.get_init_seed(); // 这个要生效， ud要改为引用 &ud
         // For each photon, first decide which Interval it's in, then drawWithin the interval.
-        if (_isRadial) {
+
+        double* _x_gpu = photons.getXArrayGpu();
+        double* _y_gpu = photons.getYArrayGpu();
+        double* _flux_gpu = photons.getFluxArrayGpu();
+        _pt.find_and_interpolateFlux(seed, _x_gpu, _y_gpu, _flux_gpu, N, fluxPerPhoton, _isRadial, xandy);
+
+        // double* x = photons.getXArray();
+        // double* y = photons.getYArray();
+        // double* flux = photons.getFluxArray();
+        // PhotonArray_gpuToCpu(x, y, flux, _x_gpu, _y_gpu, _flux_gpu, N);
 
 
-            double* _x_gpu = photons.getXArrayGpu();
-            double* _y_gpu = photons.getYArrayGpu();
-            double* _flux_gpu = photons.getFluxArrayGpu();
-            _pt.find_and_interpolateFlux(seed, _x_gpu, _y_gpu, _flux_gpu, N, fluxPerPhoton);
-
-            // double* x = photons.getXArray();
-            // double* y = photons.getYArray();
-            // double* flux = photons.getFluxArray();
-            // PhotonArray_gpuToCpu(x, y, flux, _x_gpu, _y_gpu, _flux_gpu, N);
-
-        } 
-        else 
-        {
-            //todo
-        }
         dbg<<"OneDimentionalDeviate Realized flux = "<<photons.getTotalFlux()<<std::endl;
     }
 #else
