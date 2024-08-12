@@ -17,6 +17,7 @@
  *    and/or other materials provided with the distribution.
  */
 
+#include <cmath>
 //#define DEBUGLOGGING
 
 #include "Interpolant.h"
@@ -24,7 +25,10 @@
 #include "SBProfile.h"
 #include "math/Sinc.h"
 #include "math/Angle.h"
+#include "cuda_kernels/Nearest_shoot.h"
 
+#include "cuda_kernels/Delta_shoot.h"
+#include "cuda_kernels/Linear_shoot.h" // Include the header for the CUDA function
 // Gary's original code used a lot of lookup tables, but most of these have analytic formulae
 // that seem to be generally faster than the lookup table.  Part of this is probably because
 // our lookup table isn't super fast, so I'm leaving the code in, but disabled.  If we manage
@@ -144,6 +148,9 @@ namespace galsim {
 
     void Delta::shoot(PhotonArray& photons, UniformDeviate ud) const
     {
+    #ifdef ENABLE_CUDA
+        Delta_shoot_cuda(photons);
+    #else
         const int N = photons.size();
         dbg<<"Delta shoot: N = "<<N<<std::endl;
         dbg<<"Target flux = 1.\n";
@@ -152,6 +159,7 @@ namespace galsim {
             photons.setPhoton(i, 0., 0., fluxPerPhoton);
         }
         dbg<<"Delta Realized flux = "<<photons.getTotalFlux()<<std::endl;
+    #endif
     }
 
     std::string Delta::makeStr() const
@@ -177,14 +185,20 @@ namespace galsim {
 
     void Nearest::shoot(PhotonArray& photons, UniformDeviate ud) const
     {
+    #ifdef ENABLE_CUDA
+        int N = photons.size();
+        unsigned long seed = 1234; // You might want to use a proper seed initialization
+        Nearest_shoot_cuda(photons, N, seed);
+    #else
         const int N = photons.size();
-        dbg<<"Nearest shoot: N = "<<N<<std::endl;
-        dbg<<"Target flux = 1.\n";
-        double fluxPerPhoton = 1./N;
-        for (int i=0; i<N; i++)  {
-            photons.setPhoton(i, ud()-0.5, ud()-0.5, fluxPerPhoton);
+        dbg << "Nearest shoot: N = " << N << std::endl;
+        dbg << "Target flux = 1.\n";
+        double fluxPerPhoton = 1. / N;
+        for (int i = 0; i < N; i++) {
+            photons.setPhoton(i, ud() - 0.5, ud() - 0.5, fluxPerPhoton);
         }
-        dbg<<"Nearest Realized flux = "<<photons.getTotalFlux()<<std::endl;
+        dbg << "Nearest Realized flux = " << photons.getTotalFlux() << std::endl;
+    #endif
     }
 
     std::string Nearest::makeStr() const
@@ -256,15 +270,20 @@ namespace galsim {
 
     void Linear::shoot(PhotonArray& photons, UniformDeviate ud) const
     {
-        const int N = photons.size();
-        dbg<<"Linear shoot: N = "<<N<<std::endl;
-        dbg<<"Target flux = 1.\n";
-        double fluxPerPhoton = 1./N;
-        for (int i=0; i<N; i++) {
-            // *** Guessing here that 2 random draws is faster than a sqrt:
-            photons.setPhoton(i, ud() + ud() - 1., ud() + ud() - 1., fluxPerPhoton);
-        }
-        dbg<<"Linear Realized flux = "<<photons.getTotalFlux()<<std::endl;
+        #ifdef ENABLE_CUDA
+            galsim::Linear_shoot_cuda(photons, ud);
+        #else
+            const int N = photons.size();
+            dbg << "Linear shoot: N = " << N << std::endl;
+            dbg << "Target flux = 1.\n";
+            double fluxPerPhoton = 1. / N;
+            for (int i = 0; i < N; i++) {
+                // *** Guessing here that 2 random draws is faster than a sqrt:
+                photons.setPhoton(i, ud() + ud() - 1., ud() + ud() - 1., fluxPerPhoton);
+            }
+            dbg << "Linear Realized flux = " << photons.getTotalFlux() << std::endl;
+        #endif
+                dbg << "Linear Realized flux = " << photons.getTotalFlux() << std::endl;
     }
 
     std::string Linear::makeStr() const
