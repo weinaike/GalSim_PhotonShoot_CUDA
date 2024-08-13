@@ -307,6 +307,7 @@ namespace galsim
          
         size_t numElements = allElements.size();
         _shortcutSize = _shortcut.size() ;
+
         // 2. 为设备端的元素数组分配内存
         CUDA_CHECK_RETURN(cudaMalloc((void**)&_d_elements, numElements * sizeof(DeviceElement)));
         CUDA_CHECK_RETURN(cudaMalloc((void**)&_d_interval, numElements * sizeof(Device_Interval)));           
@@ -317,7 +318,7 @@ namespace galsim
         CUDA_CHECK_RETURN(cudaMemset(_d_shortcut, 0, _shortcutSize * sizeof(DeviceElement*)));
               
         
-        Device_Interval * interval_start = _d_interval;
+        // Device_Interval * interval_start = _d_interval;
         
         DeviceElement* gpuRoot = _d_elements;
         DeviceElement* currentGPUElement = gpuRoot;        
@@ -330,16 +331,13 @@ namespace galsim
         copyNodesToGPU(this->_root, d_elements_iter, d_interval_iter, currentGPUElement) ;
 
 
-        Device_Interval host[numElements] = {0};
-        CUDA_CHECK_RETURN(cudaMemcpy(host, interval_start, numElements * sizeof(Device_Interval), cudaMemcpyDeviceToHost));
-
         // printf_root(this->_root, gpuRoot);
         // 7. 复制快捷方式数组到设备端
 
         int blockSize = 1;
         int numBlocks = 1;
         buildShortcutKernel<<<numBlocks, blockSize>>>(gpuRoot, numElements, this->_totalAbsFlux, _shortcutSize, _d_shortcut);
-
+        CUDA_CHECK_RETURN(cudaDeviceSynchronize());
         // print_shortcut();
 
     }

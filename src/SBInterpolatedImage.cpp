@@ -1265,7 +1265,9 @@ namespace galsim {
         double thresh = std::numeric_limits<double>::epsilon() * (_positiveFlux + _negativeFlux);
         dbg<<"thresh = "<<thresh<<std::endl;
         _pt.buildTree(thresh);
-
+#ifdef ENABLE_CUDA
+        _pt.CopyPixelTreeToGpu();
+#endif        
         _readyToShoot = true;
     }
 
@@ -1292,11 +1294,23 @@ namespace galsim {
         dbg<<"posFlux = "<<_positiveFlux<<", negFlux = "<<_negativeFlux<<std::endl;
         dbg<<"totFlux = "<<_positiveFlux-_negativeFlux<<", totAbsFlux = "<<totalAbsFlux<<std::endl;
         dbg<<"fluxPerPhoton = "<<fluxPerPhoton<<std::endl;
+
+#ifdef ENABLE_CUDA
+        long seed = ud.get_init_seed(); // 这个要生效， ud要改为引用 &ud
+        // For each photon, first decide which Interval it's in, then drawWithin the interval.
+
+        double* _x_gpu = photons.getXArrayGpu();
+        double* _y_gpu = photons.getYArrayGpu();
+        double* _flux_gpu = photons.getFluxArrayGpu();
+        _pt.find_and_interpolateFlux(seed, _x_gpu, _y_gpu, _flux_gpu, N, fluxPerPhoton);
+#else
         for (int i=0; i<N; ++i) {
             double unitRandom = ud();
             const shared_ptr<Pixel> p = _pt.find(unitRandom);
             photons.setPhoton(i, p->x, p->y, p->isPositive ? fluxPerPhoton : -fluxPerPhoton);
         }
+        
+#endif
         dbg<<"photons.getTotalFlux = "<<photons.getTotalFlux()<<std::endl;
 
         // Last step is to convolve with the interpolation kernel.

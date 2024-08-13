@@ -95,5 +95,5 @@ namespace galsim {
     };
 
 }
-#endif
-#endif
+#endif  // ENABLE_CUDA
+#endif  // __CuProbabilityTree_h__

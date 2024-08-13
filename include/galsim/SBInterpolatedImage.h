@@ -28,6 +28,19 @@
 
 namespace galsim {
 
+    struct Pixel {
+        double x;
+        double y;
+        bool isPositive;
+        double flux;
+
+        Pixel(double x_, double y_, double flux_):
+            x(x_), y(y_), flux(flux_) { isPositive = flux>=0.; }
+        double getFlux() const { return flux; }
+    };
+
+
+
     PUBLIC_API double CalculateSizeContainingFlux(
         const BaseImage<double>& im, double target_flux);
 

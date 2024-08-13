@@ -22,7 +22,7 @@
 
 #include <vector>
 #include "Std.h"
-
+#include <algorithm>
 namespace galsim {
 
     /**

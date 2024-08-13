@@ -22,9 +22,16 @@
 
 #include "SBProfileImpl.h"
 #include "SBInterpolatedImage.h"
-#include "ProbabilityTree.h"
+
+
+#ifdef ENABLE_CUDA
+    #include "cuda_kernels/CuPixelProbabilityTree.h"    
+#else
+    #include "ProbabilityTree.h"
+#endif
 
 namespace galsim {
+
 
     class SBInterpolatedImage::SBInterpolatedImageImpl : public SBProfile::SBProfileImpl
     {
@@ -153,19 +160,13 @@ namespace galsim {
         /**
          * @brief Simple structure used to index all pixels for photon shooting
          */
-        struct Pixel {
-            double x;
-            double y;
-            bool isPositive;
-            double flux;
-
-            Pixel(double x_, double y_, double flux_):
-                x(x_), y(y_), flux(flux_) { isPositive = flux>=0.; }
-            double getFlux() const { return flux; }
-        };
         mutable double _positiveFlux;    ///< Sum of all positive pixels' flux
         mutable double _negativeFlux;    ///< Sum of all negative pixels' flux
+#ifdef ENABLE_CUDA
+        mutable CuPixelProbabilityTree _pt; ///< Binary tree of pixels, for photon-shooting      
+#else
         mutable ProbabilityTree<Pixel> _pt; ///< Binary tree of pixels, for photon-shooting
+#endif
 
     private:
 
