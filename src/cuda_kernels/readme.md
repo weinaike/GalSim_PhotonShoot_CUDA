@@ -4,7 +4,7 @@ gpu版本，需要关注
 
 是否有关于 photonArray 关于x, y, flux 的额外操作
 
-已有而外操作的包括：
+已有额外操作的包括：
 
 * [ ] chromatic.py
 * [ ] convolve.py
@@ -12,3 +12,14 @@ gpu版本，需要关注
 * [ ] phase_psf.py
 * [ ] sum.py
 * [X] transform.py
+
+
+c++ shoot转cuda待实现：
+
+* [ ] SBMoffatImpl::shoot
+* [ ] SBGaussianImpl::shoot
+* [ ] SBDeltaFunctionImpl::shoot
+* [ ] SBTopHatImpl::shoot
+* [ ] SBBoxImpl::shoot
+* [ ] SBAddImpl::shoot
+* [ ] SBTransformImpl::shoot
