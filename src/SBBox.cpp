@@ -30,6 +30,11 @@
 #define USE_COS_SIN
 #endif
 
+#ifdef ENABLE_CUDA
+#include "cuda_kernels/SBBoxImpl_shoot.h"
+#include "cuda_kernels/SBTopHatImpl_shoot.h"
+#endif
+
 namespace galsim {
 
 
@@ -240,6 +245,10 @@ namespace galsim {
 
     void SBBox::SBBoxImpl::shoot(PhotonArray& photons, UniformDeviate ud) const
     {
+
+    #ifdef ENABLE_CUDA
+        SBBoxImpl_shoot_cuda(photons, _width, _height, _flux, ud);
+    #else
         const int N = photons.size();
         dbg<<"Box shoot: N = "<<N<<std::endl;
         dbg<<"Target flux = "<<getFlux()<<std::endl;
@@ -247,6 +256,7 @@ namespace galsim {
         for (int i=0; i<N; i++)
             photons.setPhoton(i, _width*(ud()-0.5), _height*(ud()-0.5), fluxPerPhoton);
         dbg<<"Box Realized flux = "<<photons.getTotalFlux()<<std::endl;
+    #endif
     }
 
 
@@ -445,6 +455,9 @@ namespace galsim {
 
     void SBTopHat::SBTopHatImpl::shoot(PhotonArray& photons, UniformDeviate ud) const
     {
+    #ifdef ENABLE_CUDA
+        SBTopHatImpl_shoot_cuda(photons, _r0, _flux, ud);
+    #else
         const int N = photons.size();
         dbg<<"TopHat shoot: N = "<<N<<std::endl;
         dbg<<"Target flux = "<<getFlux()<<std::endl;
@@ -471,5 +484,6 @@ namespace galsim {
 #endif
         }
         dbg<<"TopHat Realized flux = "<<photons.getTotalFlux()<<std::endl;
+    #endif
     }
 }

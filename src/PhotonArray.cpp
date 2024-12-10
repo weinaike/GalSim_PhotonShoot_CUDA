@@ -80,12 +80,15 @@ namespace galsim {
     {
 #ifdef ENABLE_CUDA        
         // Allocate memory on the GPU
-        CUDA_CHECK_RETURN(cudaFree(_x_gpu));
-        CUDA_CHECK_RETURN(cudaFree(_y_gpu));
-        CUDA_CHECK_RETURN(cudaFree(_flux_gpu));   
-        _x_gpu = nullptr;
-        _y_gpu = nullptr;
-        _flux_gpu = nullptr;
+        if(_x_gpu != nullptr)
+        {
+            CUDA_CHECK_RETURN(cudaFree(_x_gpu));
+            CUDA_CHECK_RETURN(cudaFree(_y_gpu));
+            CUDA_CHECK_RETURN(cudaFree(_flux_gpu));   
+            _x_gpu = nullptr;
+            _y_gpu = nullptr;
+            _flux_gpu = nullptr;
+        }
 #endif     
     }
 

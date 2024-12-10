@@ -34,6 +34,10 @@
 #define USE_COS_SIN
 #endif
 
+#ifdef ENABLE_CUDA
+#include "cuda_kernels/SBGaussianImpl_shoot.h"
+#endif
+
 namespace galsim {
 
 
@@ -277,10 +281,15 @@ namespace galsim {
 
     void SBGaussian::SBGaussianImpl::shoot(PhotonArray& photons, UniformDeviate ud) const
     {
+    
+
         const int N = photons.size();
         dbg<<"Gaussian shoot: N = "<<N<<std::endl;
         dbg<<"Target flux = "<<getFlux()<<std::endl;
         double fluxPerPhoton = _flux/N;
+    #ifdef ENABLE_CUDA        
+        SBGaussianImpl_shoot_cuda(photons, ud, _sigma, fluxPerPhoton);
+    #else
         for (int i=0; i<N; i++) {
             // First get a point uniformly distributed on unit circle
 #ifdef USE_COS_SIN
@@ -303,6 +312,7 @@ namespace galsim {
             photons.setPhoton(i, rFactor*xu, rFactor*yu, fluxPerPhoton);
 #endif
         }
+    #endif
         dbg<<"Gaussian Realized flux = "<<photons.getTotalFlux()<<std::endl;
     }
 }

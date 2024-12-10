@@ -21,6 +21,9 @@
 
 #include "SBDeltaFunction.h"
 #include "SBDeltaFunctionImpl.h"
+#ifdef ENABLE_CUDA
+#include "cuda_kernels/SBDeltaFunctionImpl_shoot.h"
+#endif
 
 namespace galsim {
 
@@ -72,14 +75,21 @@ namespace galsim {
 
     void SBDeltaFunction::SBDeltaFunctionImpl::shoot(PhotonArray& photons, UniformDeviate ud) const
     {
+
+
         const int N = photons.size();
         dbg<<"Delta Function shoot: N = "<<N<<std::endl;
         dbg<<"Target flux = "<<getFlux()<<std::endl;
 
         double fluxPerPhoton = _flux/N;
+    #ifdef ENABLE_CUDA
+        SBDeltaFunctionImpl_shoot_cuda(photons, fluxPerPhoton);
+    #else
         for (int i=0; i<N; i++) {
             photons.setPhoton(i, 0.0, 0.0, fluxPerPhoton);
         }
+    #endif
         dbg<<"Realized flux = "<<photons.getTotalFlux()<<std::endl;
+
     }
 }
