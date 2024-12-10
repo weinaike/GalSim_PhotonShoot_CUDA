@@ -41,6 +41,10 @@
 #define USE_COS_SIN
 #endif
 
+#ifdef ENABLE_CUDA
+#include "cuda_kernels/SBMoffatImpl_shoot.h"
+#endif
+
 namespace galsim {
 
     inline double fast_pow(double x, double y)
@@ -625,6 +629,9 @@ namespace galsim {
 
     void SBMoffat::SBMoffatImpl::shoot(PhotonArray& photons, UniformDeviate ud) const
     {
+    #ifdef ENABLE_CUDA
+        SBMoffatImpl_shoot_cuda(photons, ud, _fluxFactor, _beta, _rD, _flux);
+    #else
         const int N = photons.size();
         dbg<<"Moffat shoot: N = "<<N<<std::endl;
         dbg<<"Target flux = "<<getFlux()<<std::endl;
@@ -654,7 +661,7 @@ namespace galsim {
             double rFactor = _rD * std::sqrt(newRsq / rsq);
             photons.setPhoton(i, rFactor*xu, rFactor*yu, fluxPerPhoton);
 #endif
-        }
+    #endif
         dbg<<"Moffat Realized flux = "<<photons.getTotalFlux()<<std::endl;
     }
 

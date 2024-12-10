@@ -1,3 +1,4 @@
+#ifdef ENABLE_CUDA
 #include "SBGaussianImpl_shoot.h"
 #include <curand_kernel.h>
 
@@ -50,3 +51,4 @@ namespace galsim {
     }
 
 }
+#endif
