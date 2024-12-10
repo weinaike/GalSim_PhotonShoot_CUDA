@@ -4,16 +4,20 @@
 
 #ifdef ENABLE_CUDA
 #include <cuda_runtime.h>
+#include <curand_kernel.h>
 #include "cuda_check.h"
 
 __global__ void SBMoffatImpl_shoot_CUDA(
     double* x, double* y, double* flux, double fluxPerPhoton,
-    int N, double fluxFactor, double beta, double rD, double* rands)
+    int N, double fluxFactor, double beta, double rD, long seed)
 {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i < N) {
-        double theta = 2.0 * M_PI * rands[2*i];
-        double rsq = rands[2*i+1]; // Cumulative dist function P(<r) = r^2 for unit circle
+        curandState state;
+        curand_init(seed, i, 0, &state);
+
+        double theta = 2.0 * M_PI * curand_uniform(&state);
+        double rsq = curand_uniform(&state); // Cumulative dist function P(<r) = r^2 for unit circle
         double sint, cost;
 
         sincos(theta, &sint, &cost);
@@ -37,20 +41,14 @@ namespace galsim {
 
         double fluxPerPhoton = flux / N;
 
-        // Generate random numbers
-        std::vector<double> host_rands(2*N);
-        for (int i = 0; i < 2*N; ++i) host_rands[i] = ud();
-        double* d_rands;
-        CUDA_CHECK_RETURN(cudaMalloc(&d_rands, 2*N*sizeof(double)));
-        CUDA_CHECK_RETURN(cudaMemcpy(d_rands, host_rands.data(), 2*N*sizeof(double), cudaMemcpyHostToDevice));
-
-        dim3 blocks((N + 256 - 1) / 256);
+        unsigned long long seed = ud.get_init_seed(); 
         dim3 threads(256);
+        dim3 blocks((N + threads.x - 1) / threads.x);
 
-        SBMoffatImpl_shoot_CUDA<<<blocks, threads>>>(d_x, d_y, d_flux, fluxPerPhoton, N, fluxFactor, beta, rD, d_rands);
+        SBMoffatImpl_shoot_CUDA<<<blocks, threads>>>(d_x, d_y, d_flux, fluxPerPhoton, N, fluxFactor, beta, rD, seed);
 
         CUDA_CHECK_RETURN(cudaDeviceSynchronize());
-        CUDA_CHECK_RETURN(cudaFree(d_rands));
+
     }
 }
 

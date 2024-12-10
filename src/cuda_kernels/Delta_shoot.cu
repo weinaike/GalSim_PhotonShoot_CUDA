@@ -1,8 +1,9 @@
-#include <cuda_runtime.h>
+
 #include <iostream>
 #include "PhotonArray.h"
+#ifdef ENABLE_CUDA
 #include "Delta_shoot.h"
-
+#include <cuda_runtime.h>
 // CUDA kernel function
 __global__ void delta_shoot_kernel(int N, double fluxPerPhoton, double* x, double* y, double* flux)
 {
@@ -34,3 +35,5 @@ namespace galsim {
         dbg<<"Delta Realized flux = "<<photons.getTotalFlux()<<std::endl;
     }
 }
+
+#endif

@@ -13,13 +13,12 @@ gpu版本，需要关注
 * [ ] sum.py
 * [X] transform.py
 
-
 c++ shoot转cuda待实现：
 
-* [ ] SBMoffatImpl::shoot
-* [ ] SBGaussianImpl::shoot
-* [ ] SBDeltaFunctionImpl::shoot
-* [ ] SBTopHatImpl::shoot
-* [ ] SBBoxImpl::shoot
-* [ ] SBAddImpl::shoot
-* [ ] SBTransformImpl::shoot
+* [X] SBMoffatImpl::shoot
+* [X] SBGaussianImpl::shoot
+* [X] SBDeltaFunctionImpl::shoot
+* [X] SBTopHatImpl::shoot
+* [X] SBBoxImpl::shoot
+* [X] SBAddImpl::shoot
+* [X] SBTransformImpl::shoot
