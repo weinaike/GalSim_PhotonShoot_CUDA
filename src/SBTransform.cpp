@@ -23,6 +23,9 @@
 #include "SBTransformImpl.h"
 #include "fmath/fmath.hpp"  // Use their compiler checks for the right SSE include.
 
+#ifdef ENABLE_CUDA
+#include "cuda_kernels/CuPhotonArray.h"
+#endif
 namespace galsim {
 
     SBTransform::SBTransform(const SBProfile& adaptee, const double* jac,
@@ -976,10 +979,17 @@ namespace galsim {
         // Simple job here: just remap coords of each photon, then change flux
         // If there is overall magnification in the transform
         _adaptee.shoot(photons,ud);
+    #ifdef ENABLE_CUDA
+        double * x_gpu = photons.getXArrayGpu();
+        double * y_gpu = photons.getYArrayGpu();
+        PhotonArray_fwdXY(_mA, _mB, _mC, _mD, _cen.x, _cen.y, x_gpu, y_gpu, N) ;
+        photons.scaleFlux(_fluxScaling);
+    #else
         for (int i=0; i<N; i++) {
             Position<double> xy = fwd(Position<double>(photons.getX(i), photons.getY(i)))+_cen;
             photons.setPhoton(i, xy.x, xy.y, photons.getFlux(i)*_fluxScaling);
         }
+    #endif
         dbg<<"Distort Realized flux = "<<photons.getTotalFlux()<<std::endl;
     }
 
