@@ -1,11 +1,11 @@
 
 
-#include "CuPhotonArray.h"
 #include "time.h"
 
-
 #ifdef ENABLE_CUDA
-
+#include "CuPhotonArray.h"
+#include <curand_kernel.h>
+#include <cuda_runtime.h>
 namespace galsim
 {   
     

@@ -660,9 +660,9 @@ namespace galsim {
             double newRsq = fast_pow(1. - rsq * _fluxFactor, 1. / (1. - _beta)) - 1.;
             double rFactor = _rD * std::sqrt(newRsq / rsq);
             photons.setPhoton(i, rFactor*xu, rFactor*yu, fluxPerPhoton);
+        }
 #endif
     #endif
         dbg<<"Moffat Realized flux = "<<photons.getTotalFlux()<<std::endl;
     }
-
 }

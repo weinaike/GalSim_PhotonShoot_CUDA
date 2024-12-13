@@ -7,8 +7,7 @@
 
 
 #ifdef ENABLE_CUDA
-#include <curand_kernel.h>
-#include <cuda_runtime.h>
+
 #include "cuda_check.h"
 namespace galsim
 {

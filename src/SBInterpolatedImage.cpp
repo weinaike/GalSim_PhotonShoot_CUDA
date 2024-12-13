@@ -1219,7 +1219,7 @@ namespace galsim {
     void SBInterpolatedImage::SBInterpolatedImageImpl::checkReadyToShoot() const
     {
         if (_readyToShoot) return;
-
+        clock_t start = clock();
         dbg<<"SBInterpolatedImage not ready to shoot.  Build _pt:\n";
 
         // Build the sets holding cumulative fluxes of all Pixels
@@ -1264,10 +1264,21 @@ namespace galsim {
 
         double thresh = std::numeric_limits<double>::epsilon() * (_positiveFlux + _negativeFlux);
         dbg<<"thresh = "<<thresh<<std::endl;
-        _pt.buildTree(thresh);
+
 #ifdef ENABLE_CUDA
+    #ifdef USE_CDF
+        _pt.buildCDF(thresh);
+    #else
+        _pt.buildTree(thresh);
         _pt.CopyPixelTreeToGpu();
-#endif        
+    #endif
+        clock_t end = clock();
+        // printf("Time to build _pt = %f \n", double(end-start)/CLOCKS_PER_SEC);
+#else
+        _pt.buildTree(thresh);
+        clock_t end = clock();
+        // printf("Time to build _pt = %f \n", double(end-start)/CLOCKS_PER_SEC);
+#endif
         _readyToShoot = true;
     }
 
@@ -1302,14 +1313,13 @@ namespace galsim {
         double* _x_gpu = photons.getXArrayGpu();
         double* _y_gpu = photons.getYArrayGpu();
         double* _flux_gpu = photons.getFluxArrayGpu();
-        _pt.find_and_interpolateFlux(seed, _x_gpu, _y_gpu, _flux_gpu, N, fluxPerPhoton);
+        _pt.find(seed, _x_gpu, _y_gpu, _flux_gpu, N, fluxPerPhoton);
 #else
         for (int i=0; i<N; ++i) {
             double unitRandom = ud();
             const shared_ptr<Pixel> p = _pt.find(unitRandom);
             photons.setPhoton(i, p->x, p->y, p->isPositive ? fluxPerPhoton : -fluxPerPhoton);
         }
-        
 #endif
         dbg<<"photons.getTotalFlux = "<<photons.getTotalFlux()<<std::endl;
 

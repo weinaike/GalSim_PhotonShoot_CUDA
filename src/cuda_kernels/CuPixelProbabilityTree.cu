@@ -200,12 +200,10 @@ namespace galsim {
 
 
 
-    void CuPixelProbabilityTree::find_and_interpolateFlux(long seed, double * x, double* y, double* flux, int N, double fluxPerPhoton) const
+    void CuPixelProbabilityTree::find(long seed, double * x, double* y, double* flux, int N, double fluxPerPhoton) const
     {
         time_t start, end;
         start = clock();
-
-        // printf("find_and_interpolateFlux\n");
 
         int blockSize = 256; // Example block size
         int numBlocks = (N + blockSize - 1) / blockSize;

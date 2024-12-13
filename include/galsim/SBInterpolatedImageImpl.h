@@ -25,7 +25,12 @@
 
 
 #ifdef ENABLE_CUDA
-    #include "cuda_kernels/CuPixelProbabilityTree.h"    
+    #define USE_CDF
+    #ifdef USE_CDF
+        #include "cuda_kernels/CuPixelCDF.h"
+    #else
+        #include "cuda_kernels/CuPixelProbabilityTree.h"    
+    #endif
 #else
     #include "ProbabilityTree.h"
 #endif
@@ -163,7 +168,11 @@ namespace galsim {
         mutable double _positiveFlux;    ///< Sum of all positive pixels' flux
         mutable double _negativeFlux;    ///< Sum of all negative pixels' flux
 #ifdef ENABLE_CUDA
-        mutable CuPixelProbabilityTree _pt; ///< Binary tree of pixels, for photon-shooting      
+        #ifdef USE_CDF
+            mutable CuPixelCDF _pt; ///< Binary tree of pixels, for photon-shooting
+        #else
+            mutable CuPixelProbabilityTree _pt; ///< Binary tree of pixels, for photon-shooting      
+        #endif
 #else
         mutable ProbabilityTree<Pixel> _pt; ///< Binary tree of pixels, for photon-shooting
 #endif

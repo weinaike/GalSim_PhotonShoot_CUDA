@@ -29,7 +29,11 @@
 #include "SBProfile.h"
 #include "Std.h"
 #include "Interval.h"
+
+#ifdef ENABLE_CUDA
 #include "cuda_kernels/CuProbabilityTree.h"
+#endif
+
 namespace galsim {
 
     /**

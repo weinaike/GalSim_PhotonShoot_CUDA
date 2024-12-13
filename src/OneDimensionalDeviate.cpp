@@ -20,8 +20,7 @@
 // #define DEBUGLOGGING
 
 #include "OneDimensionalDeviate.h"
-#include "cuda_kernels/CuPhotonArray.h"
-#include "cuda_kernels/CuProbabilityTree.h"
+
 #include "integ/Int.h"
 #include "SBProfile.h"
 #include "math/Angle.h"
@@ -36,6 +35,10 @@
 #define USE_COS_SIN
 #endif
 
+#ifdef ENABLE_CUDA
+#include "cuda_kernels/CuProbabilityTree.h"
+#include "cuda_kernels/CuPhotonArray.h"
+#endif
 namespace galsim {
 
     // Wrapper class for doing integrals over annuli

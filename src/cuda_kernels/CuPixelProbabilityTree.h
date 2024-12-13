@@ -90,7 +90,7 @@ namespace galsim {
 
         DevicePixelElement* getDeviceElements() const { return _d_elements; }
         DevicePixelElement** getDeviceShortcut() const { return _d_shortcut; }      
-        void find_and_interpolateFlux(long seed, double * x, double* y, double* flux, int N, double fluxPerPhoton) const;
+        void find(long seed, double * x, double* y, double* flux, int N, double fluxPerPhoton) const;
 
         void printf_root(const Element* root, DevicePixelElement* gpu_root) const;
     private:       
