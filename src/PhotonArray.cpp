@@ -334,7 +334,7 @@ namespace galsim {
                                      " undefined Bounds");
         #ifdef ENABLE_CUDA
             // cuda version
-            printf("cuda version\n");
+            // printf("cuda version\n");
             dbg<<"==========cuda version\n";
             time_t start, end;
             start = clock();
@@ -348,7 +348,7 @@ namespace galsim {
             dbg<<"==========addto time: "<<time<<" ms\n";
             return addedFlux;
         #else    
-            printf("c++ version\n");
+            // printf("c++ version\n");
             dbg<<"==========c++ version\n";
             time_t start, end;
             start = clock();
