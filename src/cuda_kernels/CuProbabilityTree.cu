@@ -33,6 +33,7 @@ namespace galsim
 
             // find 
             int i = int(unitRandom * shortcutSize);
+            if(i == shortcutSize) {i = shortcutSize - 1;}
             DeviceElement* element = d_shortcut[i];
             unitRandom *= totalAbsFlux;
 
@@ -92,6 +93,7 @@ namespace galsim
 
             // find 
             int i = int(unitRandom * shortcutSize);
+            if(i == shortcutSize) {i = shortcutSize - 1;}
             DeviceElement* element = d_shortcut[i];
             unitRandom *= totalAbsFlux;
 
@@ -119,6 +121,7 @@ namespace galsim
                 unitRandom = curand_uniform(&state) ;
                 // find 
                 int i = int(unitRandom * shortcutSize);
+                if(i == shortcutSize) {i = shortcutSize - 1;}
                 DeviceElement* element = d_shortcut[i];
                 unitRandom *= totalAbsFlux;
 
@@ -166,6 +169,7 @@ namespace galsim
             xandy_rand_shoot_kernel<<<numBlocks, blockSize>>>(seed, xandy, x, y, flux, N, fluxPerPhoton, 
                         _d_shortcut, _shortcutSize, this->_totalAbsFlux);
         }
+        CUDA_CHECK_RETURN(cudaDeviceSynchronize());
         CUDA_CHECK_RETURN(cudaGetLastError());        
 
         end = clock();

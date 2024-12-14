@@ -6,6 +6,7 @@
 #include "CuPhotonArray.h"
 #include <curand_kernel.h>
 #include <cuda_runtime.h>
+#include "cuda_check.h"
 namespace galsim
 {   
     
@@ -28,6 +29,8 @@ namespace galsim
         const int numBlocks = (N_src + blockSize - 1) / blockSize;
         // Copy _x array
         copyArray<<<numBlocks, blockSize>>>(dest, N_dest, offset, src, N_src);
+        CUDA_CHECK_RETURN(cudaDeviceSynchronize());   
+        CUDA_CHECK_RETURN(cudaGetLastError());
     }
 
 
@@ -62,6 +65,8 @@ namespace galsim
         addArrays<<<numBlocks, blockSize>>>(d_x, d_rhs_x, N);
         addArrays<<<numBlocks, blockSize>>>(d_y, d_rhs_y, N);
         multiplyArrays<<<numBlocks, blockSize>>>(d_flux, d_rhs_flux, scale, N);
+        CUDA_CHECK_RETURN(cudaDeviceSynchronize());   
+        CUDA_CHECK_RETURN(cudaGetLastError());
     }
 
 
@@ -104,6 +109,8 @@ namespace galsim
         int threadsPerBlock = 256;
         int blocksPerGrid = (N + threadsPerBlock - 1) / threadsPerBlock;
         convolveShuffleKernel<<<blocksPerGrid, threadsPerBlock>>>(d_x, d_y, d_flux, d_rhs_x, d_rhs_y, d_rhs_flux, N, seed);
+        CUDA_CHECK_RETURN(cudaDeviceSynchronize());   
+        CUDA_CHECK_RETURN(cudaGetLastError());
     }
 
 
@@ -122,6 +129,8 @@ namespace galsim
         int blockSize = 256;
         int numBlocks = (_n + blockSize - 1) / blockSize;
         affineTransformKernel<<<numBlocks, blockSize>>>(_x_gpu, _y_gpu, mA, mB, mC, mD, dx, dy, _n);
+        CUDA_CHECK_RETURN(cudaDeviceSynchronize());   
+        CUDA_CHECK_RETURN(cudaGetLastError());
     }
 
 
@@ -225,6 +234,7 @@ namespace galsim
         int blockSize = 256;
         int numBlocks = (_N + blockSize - 1) / blockSize;
         scaleKernel<<<numBlocks, blockSize>>>(d_data, _N, scale);
+        CUDA_CHECK_RETURN(cudaDeviceSynchronize());
         CUDA_CHECK_RETURN(cudaGetLastError()); 
 
 
@@ -248,6 +258,8 @@ namespace galsim
 
         accumulateKernel<<<numBlocks, blockSize, blockSize * sizeof(double)>>>(d_flux, d_result, _N);
         CUDA_CHECK_RETURN(cudaDeviceSynchronize());
+        CUDA_CHECK_RETURN(cudaGetLastError());
+
 
         CUDA_CHECK_RETURN(cudaMemcpy(&result, d_result, sizeof(double), cudaMemcpyDeviceToHost));
         CUDA_CHECK_RETURN(cudaFree(d_result));
@@ -308,13 +320,15 @@ namespace galsim
             int blockSize = 256; // Example block size
             int numBlocks = (size + blockSize - 1) / blockSize;
             photonArray_addTo_Kernel<<<numBlocks, blockSize, blockSize * sizeof(double)>>>(d_added_flux, d_x, d_y, d_flux, size, d_target, d_cub);
-            cudaDeviceSynchronize();   
+            CUDA_CHECK_RETURN(cudaDeviceSynchronize());   
+            CUDA_CHECK_RETURN(cudaGetLastError());
         #else
         
             dim3 blocks((size + 256 - 1) / 256);
             dim3 threads(256);    
             photonArray_addTo_Kernel_1<<<blocks, threads>>>(d_added_flux, d_x, d_y, d_flux, size, d_target, d_cub);  
-            cudaDeviceSynchronize();   
+            CUDA_CHECK_RETURN(cudaDeviceSynchronize());   
+            CUDA_CHECK_RETURN(cudaGetLastError());
         #endif
 
         target.copyGpuDataToCpu();
