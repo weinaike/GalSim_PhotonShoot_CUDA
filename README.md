@@ -58,7 +58,7 @@ make install
 
 ### 注意事项
 
-* **版本切换:** 若需要从 CUDA 版本切换回 C++ 版本，请重新执行 pip install . -e 并确保 ENABLE_CUDA 未启用。
+* **版本切换:** 若需要从 CUDA 版本切换回 C++ 版本，请重新编译并确保 ENABLE_CUDA 未启用。
 * **性能优化:** 确保显卡驱动与 CUDA Toolkit 版本匹配，以发挥最佳性能。使用 nvidia-smi 检查 GPU 资源占用情况。
 * **问题排查:** 如果编译或运行中出现问题，请检查 CMake 日志和 CUDA 编译器输出。 确保 Python 环境干净，避免依赖冲突。
 
@@ -66,7 +66,7 @@ make install
 
 如果在使用过程中遇到问题或有改进建议，请通过以下方式联系我们：
 
-项目主页: GitHub 链接
+项目主页: [GitHub 链接](https://github.com/weinaike/GalSim_PhotonShoot_CUDA)
 
 邮件: weinaike@zhejianglab.org
 
