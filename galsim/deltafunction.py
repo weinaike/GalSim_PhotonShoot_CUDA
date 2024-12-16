@@ -24,7 +24,7 @@ import math
 from . import _galsim
 from .gsobject import GSObject
 from .gsparams import GSParams
-from .utilities import doc_inherit
+from .utilities import doc_inherit, lazy_property
 
 
 class DeltaFunction(GSObject):
@@ -93,10 +93,11 @@ class DeltaFunction(GSObject):
         return self.flux
 
     def _shoot(self, photons, rng):
-        flux_per_photon = self.flux / len(photons)
-        photons.x = 0.
-        photons.y = 0.
-        photons.flux = flux_per_photon
+        self._sbp.shoot(photons._pa, rng._rng)
+        # flux_per_photon = self.flux / len(photons)
+        # photons.x = 0.
+        # photons.y = 0.
+        # photons.flux = flux_per_photon
 
     def _drawKImage(self, image, jac=None):
         image.array[:,:] = self.flux
@@ -104,3 +105,7 @@ class DeltaFunction(GSObject):
     @doc_inherit
     def withFlux(self, flux):
         return DeltaFunction(flux=flux, gsparams=self.gsparams)
+    
+    @lazy_property
+    def _sbp(self):
+        return _galsim.SBDeltaFunction(self.flux, self._gsparams._gsp)

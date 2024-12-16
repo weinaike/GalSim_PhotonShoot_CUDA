@@ -411,6 +411,8 @@ class Convolution(GSObject):
             raise GalSimError("Cannot use real_space convolution for >2 profiles")
 
     def _shoot(self, photons, rng):
+        self._sbp.shoot(photons._pa, rng._rng)
+        return
         self.obj_list[0]._shoot(photons, rng)
         # It may be necessary to shuffle when convolving because we do not have a
         # gaurantee that the convolvee's photons are uncorrelated, e.g., they might
@@ -770,10 +772,11 @@ class AutoConvolution(Convolution):
         self.orig_obj._prepareDraw()
 
     def _shoot(self, photons, rng):
-        self.orig_obj._shoot(photons, rng)
-        photons2 = PhotonArray(len(photons))
-        self.orig_obj._shoot(photons2, rng)
-        photons.convolve(photons2, rng)
+        self._sbp.shoot(photons._pa, rng._rng)
+        # self.orig_obj._shoot(photons, rng)
+        # photons2 = PhotonArray(len(photons))
+        # self.orig_obj._shoot(photons2, rng)
+        # photons.convolve(photons2, rng)
 
 
 def AutoCorrelate(obj, real_space=None, gsparams=None, propagate_gsparams=True):

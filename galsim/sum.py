@@ -310,6 +310,8 @@ class Sum(GSObject):
                 image += im1
 
     def _shoot(self, photons, rng):
+        self._sbp.shoot(photons._pa, rng._rng)
+        return
         # We probabilistically choose a component for each photon based on the
         # relative flux density of that component for the given wavelength.
         comp_flux = np.array([obj.positive_flux + obj.negative_flux for obj in self._obj_list])

@@ -583,17 +583,18 @@ class Transformation(GSObject):
         self._original._drawReal(image, jac, (dx, dy), flux_scaling)
 
     def _shoot(self, photons, rng):
-        self._original._shoot(photons, rng)
-        # photons.x, photons.y = self._fwd(photons.x, photons.y)
-        # photons.x += self._dx
-        # photons.y += self._dy
-        mA = self._jac[0, 0]
-        mB = self._jac[0, 1]
-        mC = self._jac[1, 0]
-        mD = self._jac[1, 1]
-        photons.fwdXY(mA, mB, mC, mD, self._dx, self._dy)
+        self._sbp.shoot(photons._pa, rng._rng)
+        # self._original._shoot(photons, rng)
+        # # photons.x, photons.y = self._fwd(photons.x, photons.y)
+        # # photons.x += self._dx
+        # # photons.y += self._dy
+        # mA = self._jac[0, 0]
+        # mB = self._jac[0, 1]
+        # mC = self._jac[1, 0]
+        # mD = self._jac[1, 1]
+        # photons.fwdXY(mA, mB, mC, mD, self._dx, self._dy)
 
-        photons.scaleFlux(self._flux_scaling)
+        # photons.scaleFlux(self._flux_scaling)
 
     def _drawKImage(self, image, jac=None):
         jac1 = self._jac if jac is None else jac if self._jac is None else jac.dot(self._jac)
