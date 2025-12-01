@@ -33,3 +33,6 @@ downloaded_eigen
 .ipynb_checkpoints
 workspace
 build
+workflows
+examples
+__pycache__
