@@ -200,7 +200,7 @@
 | 100,000 | 128.56 | 24.35 | **426.5%** | 5.27x |
 | 1,000,000 | 210.23 | 20.44 | **928.7%** | 10.29x |
 
-**数据来源**: `/home/wnk/code/galsim_cuda/results/` 目录中的实际测试数据
+**数据来源**: `../results/` 目录中的实际测试数据
 **测试文件**: `cpp_photons_*.pkl` 和 `cuda_photons_*.pkl`
 
 #### 4.1.2 性能提升分析
@@ -244,7 +244,7 @@
 
 每个测试都生成了对应的高质量PNG可视化图像，用于直观对比：
 
-**图像文件位置**：`/home/wnk/code/galsim_cuda/results/`
+**图像文件位置**：`../results/`
 
 **场景图像对比**（10万光子）：
 
@@ -376,7 +376,7 @@ git clone http://gitee.zhejianglab.com:80/enterprise/GalSim.git
 cd GalSim
 
 # 完整测试流程
-cd /home/wnk/code/galsim_cuda
+pip install -e . # 安装依赖
 
 # 1. 收集CPP版本数据
 ./scripts/1_collect_cpp_data.sh
